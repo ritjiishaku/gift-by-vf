@@ -22,5 +22,6 @@ This repository contains the Next.js storefront and Admin CMS for Gifts by VF.
 ## Local app and access
 - Start the app from the repository root with `npm run dev`.
 - Open the storefront at `http://localhost:3000`, the staff login at `/admin/login`, and rep portal at `/reps`.
-- Admin credentials default to environment configurations.
+## Deployment
+- Automated deployment on Vercel via GitHub `main` branch pushes.
 
