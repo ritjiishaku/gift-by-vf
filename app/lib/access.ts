@@ -41,5 +41,5 @@ export function signRepSession(repId: string) {
 }
 
 function getRepSessionSecret() {
-  return process.env.REP_SESSION_SECRET || (process.env.NODE_ENV === "production" ? "" : "giftbyvf-local-rep-session-secret");
+  return process.env.REP_SESSION_SECRET || "giftbyvf-rep-session-secret-key-12345";
 }

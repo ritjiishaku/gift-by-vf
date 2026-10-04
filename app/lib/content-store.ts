@@ -186,9 +186,9 @@ const defaultContent: SiteContent = {
     footer_text: "Gifts by VF. Handcrafted with love.",
   },
   reps: [
-    { repId: "kofi", name: "Kofi Mensah", whatsapp: "2348012345678", commissionRate: "10", accessCode: "", isActive: true },
-    { repId: "ama", name: "Ama Owusu", whatsapp: "2348023456789", commissionRate: "10", accessCode: "", isActive: true },
-    { repId: "james", name: "James Thompson", whatsapp: "2348034567890", commissionRate: "15", accessCode: "", isActive: true },
+    { repId: "kofi", name: "Kofi Mensah", whatsapp: "2348012345678", commissionRate: "10", accessCode: "123456", isActive: true },
+    { repId: "ama", name: "Ama Owusu", whatsapp: "2348023456789", commissionRate: "10", accessCode: "123456", isActive: true },
+    { repId: "james", name: "James Thompson", whatsapp: "2348034567890", commissionRate: "15", accessCode: "123456", isActive: true },
   ],
   payouts: [
     { repId: "kofi", product: "Engraved Ring", orderAmount: 15000, commission: 1500, status: "PAID", date: "2026-08-15", notes: "Delivered to Lagos Island" },

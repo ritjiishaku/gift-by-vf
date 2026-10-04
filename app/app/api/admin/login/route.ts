@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminSession } from "../../../../lib/admin-session";
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || (process.env.NODE_ENV === "production" ? "" : "giftbyvf-admin");
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "123456";
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({ password: "" }));

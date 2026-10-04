@@ -180,24 +180,32 @@
       "name": "Ritji Ishaku",
       "whatsapp": "09064957884",
       "commissionRate": "12",
-      "isActive": true,
-      "accessCodeHash": "scrypt$pokICaolPInKpGhgJ9fceg$vQ1pYStS4Pr1nb368h39fEyPiKBQ4biJF_wTMta6U4JryjbQcfh4-6-3oxzqs2FwhKwuPvQywsfxkYDYrgXLvQ"
+      "accessCode": "123456",
+      "isActive": true
+    },
+    {
+      "repId": "kofi",
+      "name": "Kofi Mensah",
+      "whatsapp": "2348012345678",
+      "commissionRate": "10",
+      "accessCode": "123456",
+      "isActive": true
     },
     {
       "repId": "ama",
       "name": "Ama Owusu",
       "whatsapp": "2348023456789",
       "commissionRate": "10",
-      "isActive": true,
-      "accessCodeHash": ""
+      "accessCode": "123456",
+      "isActive": true
     },
     {
       "repId": "james",
       "name": "James Thompson",
       "whatsapp": "2348034567890",
       "commissionRate": "15",
-      "isActive": true,
-      "accessCodeHash": ""
+      "accessCode": "123456",
+      "isActive": true
     }
   ],
   "payouts": [

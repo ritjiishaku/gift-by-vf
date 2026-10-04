@@ -1,7 +1,7 @@
 const encoder = new TextEncoder();
 
 function sessionSecret() {
-  return process.env.ADMIN_SESSION_SECRET || (process.env.NODE_ENV === "production" ? "" : "giftbyvf-local-admin-session-secret");
+  return process.env.ADMIN_SESSION_SECRET || "giftbyvf-admin-session-secret-key-12345";
 }
 
 function toBase64Url(bytes: Uint8Array) {
