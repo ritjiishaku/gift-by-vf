@@ -1,0 +1,16 @@
+{
+  "name": "gift-by-vf",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npm --prefix app run dev",
+    "dev:frontend": "npm --prefix app run dev",
+    "build": "npm --prefix app run build",
+    "build:frontend": "npm --prefix app run build",
+    "start": "npm --prefix app run start",
+    "start:frontend": "npm --prefix app run start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
