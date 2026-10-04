@@ -2,95 +2,44 @@
 // Reads the same Google Sheet the site uses.
 
 const RepTools = {
-    SHEET_ID: '1N3_A0mPYkbTZ1ZeC3b_-KdrgV84jPRfyfYwEqzIwNB4',
-    TABS: { REPS: 'Sales Reps', PRODUCTS: 'Products', PAYOUTS: 'Payouts' },
+    TABS: { SETTINGS: 'Site Settings', REPS: 'Sales Reps', PRODUCTS: 'Products', PAYOUTS: 'Payouts' },
+    REP_PRODUCT_LIMIT: 8,
+    REP_PRODUCT_CHUNK: 8,
+    REP_PAYOUT_LIMIT: 5,
+    REP_CREDIT_WINDOW_DAYS: 30,
     _sessionKey: 'vf_rep_session',
     _cache: {},
     _rep: null,
 
-    parseCSV(text) {
-        const lines = text.split('\n').filter(line => line.trim());
-        if (lines.length < 2) return [];
-        const headers = this.parseCSVLine(lines[0]).map(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''));
-        const rows = [];
-        for (let i = 1; i < lines.length; i++) {
-            const values = this.parseCSVLine(lines[i]);
-            if (values.length < headers.length) continue;
-            const row = {};
-            headers.forEach((header, index) => { row[header] = values[index]?.trim() || ''; });
-            rows.push(row);
-        }
-        return rows;
-    },
-
-    parseCSVLine(line) {
-        const result = [];
-        let current = '';
-        let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            if (char === '"') {
-                if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
-                else inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) { result.push(current); current = ''; }
-            else current += char;
-        }
-        result.push(current);
-        return result;
+    setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
     },
 
     async fetchTab(tabName) {
-        if (this._cache[tabName]) return this._cache[tabName];
-        try {
-            const url = `https://docs.google.com/spreadsheets/d/${this.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tabName)}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`Failed to fetch ${tabName}`);
-            const result = this.parseCSV(await response.text());
-            this._cache[tabName] = result;
-            return result;
-        } catch (err) {
-            console.warn(`Could not fetch tab "${tabName}":`, err.message);
-            return [];
-        }
-    },
-
-    sanitize(str) {
-        const div = document.createElement('div');
-        div.textContent = String(str == null ? '' : str);
-        return div.innerHTML;
-    },
-
-    validateUrl(str) {
-        const s = String(str || '').trim();
-        if (/^https?:\/\//i.test(s)) return s;
-        return '';
-    },
-
-    filterAndSort(rows) {
-        return rows
-            .filter(r => {
-                const v = String(r.is_visible || '').toLowerCase();
-                return v !== 'false' && v !== '0';
-            })
-            .sort((a, b) => (parseInt(a.display_order) || 999) - (parseInt(b.display_order) || 999));
-    },
-
-    isActive(row) {
-        if (!row) return false;
-        const raw = row.is_active != null && row.is_active !== '' ? row.is_active : row.is_visible;
-        const v = String(raw || '').toLowerCase();
-        return v !== 'false' && v !== '0';
+        return VFUtils.fetchTab(tabName, VFUtils.SHEET_ID, this._cache);
     },
 
     findRep(repId, reps) {
         const key = String(repId || '').trim().toLowerCase();
         if (!key) return null;
-        return reps.find(r => this.isActive(r) && String(r.rep_id || '').trim().toLowerCase() === key) || null;
+        return reps.find(r => VFUtils.isActive(r) && String(r.rep_id || '').trim().toLowerCase() === key) || null;
     },
 
     shareLink(pid, ref) {
-        const path = location.pathname.replace(/reps\.html$/i, '').replace(/\/+$/, '');
-        return location.origin + path + '/index.html?ref=' + encodeURIComponent(ref) + '&p=' + encodeURIComponent(pid);
+        return location.origin + '/product/' + encodeURIComponent(pid) + '?ref=' + encodeURIComponent(ref);
+    },
+
+    dedupeProducts(rows) {
+        const seen = new Set();
+        const out = [];
+        (rows || []).forEach(p => {
+            const key = VFUtils.slugify(p.name) || String(p.display_order || '').trim();
+            if (!key || seen.has(key)) return;
+            seen.add(key);
+            out.push(p);
+        });
+        return out;
     },
 
     async login(repId) {
@@ -102,7 +51,7 @@ const RepTools = {
             return;
         }
         const reps = await this.fetchTab(this.TABS.REPS);
-        const rep = this.findRep(repId, reps);
+        const rep = this.findRep(repId, reps || []);
         if (!rep) {
             errorEl.textContent = 'That rep code was not found. Check with the owner.';
             errorEl.classList.remove('hidden');
@@ -116,118 +65,241 @@ const RepTools = {
     renderDashboard() {
         document.getElementById('rep-login').classList.add('hidden');
         document.getElementById('rep-dashboard').classList.remove('hidden');
-        document.getElementById('rep-name').textContent = this._rep.name;
+        this.setText('rep-name', this._rep.name);
         const rawRate = String(this._rep.rate || '').trim();
-        const parsed = parseInt(rawRate, 10);
-        const rateText = Number.isFinite(parsed) ? parsed + '%' : (rawRate.endsWith('%') ? rawRate : rawRate + '%');
-        document.getElementById('rep-rate').textContent = rateText;
+        let rateText = rawRate;
+        if (/^\d+(\.\d+)?%?$/.test(rawRate)) {
+            rateText = parseFloat(rawRate) + '%';
+        } else if (rawRate && !rawRate.endsWith('%')) {
+            rateText = rawRate + '%';
+        }
+        this.setText('rep-rate', rateText);
+        this.setText('rep-rule', `Commission is ${rateText} of the product's catalogue price, excluding delivery.`);
+        this.setText('rep-credit', `Any order placed through your links within ${this.REP_CREDIT_WINDOW_DAYS} days of the buyer's first click is credited to you.`);
+        const rateStat = document.getElementById('rep-stat-rate');
+        if (rateStat) rateStat.textContent = rateText;
         this.loadAndRender();
     },
 
     async loadAndRender() {
-        const [products, payouts] = await Promise.all([
+        const [products, payouts, settings] = await Promise.all([
             this.fetchTab(this.TABS.PRODUCTS),
-            this.fetchTab(this.TABS.PAYOUTS)
+            this.fetchTab(this.TABS.PAYOUTS),
+            this.fetchTab(this.TABS.SETTINGS)
         ]);
-        this.renderProducts(this.filterAndSort(products));
-        this.renderPayouts(payouts);
+        (settings || []).forEach(row => {
+            if (row.key === 'commission_rule' && row.value) {
+                this.setText('rep-rule', row.value);
+            } else if (row.key === 'brand_name' && row.value) {
+                document.querySelectorAll('.brand-text').forEach(el => (el.textContent = row.value));
+            } else if (row.key === 'brand_accent' && row.value) {
+                document.querySelectorAll('.brand-accent').forEach(el => (el.textContent = row.value));
+            }
+        });
+        this._repProducts = this.dedupeProducts(VFUtils.filterAndSort(products || []));
+        const deepLink = new URLSearchParams(location.search).get('p');
+        this._repProductShown = deepLink
+            ? this._repProducts.length
+            : Math.min(this.REP_PRODUCT_LIMIT, this._repProducts.length);
+        this.renderProductList();
+        this._payoutRows = payouts || [];
+        this.renderPayouts();
     },
 
-    renderProducts(items) {
+    renderProductList() {
         const container = document.getElementById('rep-products');
+        const items = this._repProducts || [];
         if (items.length === 0) {
             container.innerHTML = '<p class="rep-empty">No products available yet.</p>';
             return;
         }
-        container.innerHTML = items.map((p, i) => {
-            const pid = p.display_order || (i + 1);
-            const link = this.shareLink(pid, this._rep.rep_id);
-            const waShare = `https://wa.me/?text=${encodeURIComponent(link)}`;
-            const price = p.price || p.price_from || '';
-            const img = this.validateUrl(p.image_url);
-            const initial = String(p.name || '?').trim().charAt(0).toUpperCase();
-            return `
-                <div class="rep-product">
-                    <div class="rep-product-thumb${img ? '' : ' no-image'}">
-                        ${img ? `<img src="${this.sanitize(img)}" alt="" loading="lazy" onerror="this.parentNode.classList.add('no-image')">` : ''}
-                        <span class="rep-thumb-initial">${this.sanitize(initial)}</span>
-                    </div>
-                    <div class="rep-product-info">
-                        <h4>${this.sanitize(p.name)}</h4>
-                        <p>${this.sanitize(p.description)}${price ? ` &middot; From ${this.sanitize(price)}` : ''}</p>
-                    </div>
-                    <div class="rep-product-actions">
-                        <input type="text" readonly value="${this.sanitize(link)}" aria-label="Share link for ${this.sanitize(p.name)}">
-                        <button class="rep-sm-btn" data-copy="${this.sanitize(link)}">Copy</button>
-                        <a class="rep-sm-btn" href="${waShare}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
-                        ${navigator.share ? `<button class="rep-sm-btn" data-share="${this.sanitize(link)}">Share</button>` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
+        const shown = Math.min(this._repProductShown, items.length);
+        let html = items.slice(0, shown).map((p, i) => this.repProductCardHTML(p, i)).join('');
+        const more = items.length - shown;
+        if (more > 0) html += VFUtils.loadMoreButton(more, 'load-more-rep-products-btn');
+        container.innerHTML = html;
     },
 
-    copyText(text, btn) {
-        const done = () => {
-            const original = btn.textContent;
-            btn.textContent = 'Copied!';
-            setTimeout(() => (btn.textContent = original), 1500);
-        };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(done).catch(() => this.fallbackCopy(text, done));
+    showMoreRepProducts() {
+        const items = this._repProducts || [];
+        const container = document.getElementById('rep-products');
+        if (!container || items.length === 0) return;
+        const append = Math.min(this.REP_PRODUCT_CHUNK, items.length - this._repProductShown);
+        if (append <= 0) return;
+        const start = this._repProductShown;
+        this._repProductShown += append;
+
+        const html = items.slice(start, start + append).map((p, i) => this.repProductCardHTML(p, start + i)).join('');
+
+        let btn = container.querySelector('#load-more-rep-products-btn');
+        if (btn) {
+            const wrap = btn.closest('.load-more-wrap');
+            if (wrap) wrap.insertAdjacentHTML('beforebegin', html);
+            else container.insertAdjacentHTML('beforeend', html);
+            const remaining = items.length - this._repProductShown;
+            if (remaining > 0) {
+                btn.textContent = `Show more (${remaining} more)`;
+            } else {
+                btn.closest('.load-more-wrap').remove();
+            }
         } else {
-            this.fallbackCopy(text, done);
+            container.insertAdjacentHTML('beforeend', html);
         }
     },
 
-    fallbackCopy(text, done) {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand('copy'); } catch (e) {}
-        document.body.removeChild(ta);
-        done();
+    estimatedCommission(p) {
+        const rate = parseFloat(String(this._rep && this._rep.rate || '').replace('%', ''));
+        if (!Number.isFinite(rate) || rate <= 0) return '';
+        const price = VFUtils.priceNumber(p);
+        if (price == null || price <= 0) return '';
+        return '≈ ₦' + Math.round(price * rate / 100).toLocaleString() + ' commission';
     },
 
-    renderPayouts(rows) {
+    repProductCardHTML(p, i) {
+        const pid = VFUtils.slugify(p.name) || String(p.display_order || (i + 1));
+        const link = this.shareLink(pid, this._rep.rep_id);
+        const waShare = `https://wa.me/?text=${encodeURIComponent(link)}`;
+        const price = VFUtils.priceNumber(p) != null ? VFUtils.formatNaira(p.price) : '';
+        const commission = this.estimatedCommission(p);
+        const soldOut = VFUtils.isSoldOut(p);
+        const stockLabel = soldOut ? (String(p.stock_label || '').trim() || 'Sold Out') : '';
+        const img = VFUtils.validateUrl(VFUtils.directImageUrl(p.image_url));
+        const initial = String(p.name || '?').trim().charAt(0).toUpperCase();
+        const shareBtn = navigator.share
+            ? `<button type="button" class="rep-share-btn" data-share="${VFUtils.sanitize(link)}">Share</button>`
+            : '';
+        return `
+            <div class="rep-product${soldOut ? ' is-soldout' : ''}" itemscope itemtype="https://schema.org/Product">
+                <div class="rep-product-thumb${img ? '' : ' no-image'}">
+                    ${img ? `<img src="${VFUtils.sanitize(img)}" alt="" loading="lazy" decoding="async" onerror="if(!this.dataset.retried){this.dataset.retried='true';this.src='${VFUtils.sanitize(img)}';}else{this.parentNode.classList.add('no-image');}">` : ''}
+                    <span class="rep-thumb-initial">${VFUtils.sanitize(initial)}</span>
+                    ${soldOut ? `<span class="rep-stock-badge">${VFUtils.sanitize(stockLabel)}</span>` : ''}
+                </div>
+                <div class="rep-product-info">
+                    <h4 itemprop="name">${VFUtils.sanitize(p.name)}</h4>
+                    ${price ? `<span class="rep-product-price" itemprop="price" content="${VFUtils.priceNumber(p)}">From ${VFUtils.sanitize(price)}</span>` : ''}
+                    <p itemprop="description">${VFUtils.sanitize(p.description)}</p>
+                    ${p.sales_caption ? `<p class="rep-caption">${VFUtils.sanitize(p.sales_caption)}</p>` : ''}
+                    ${commission ? `<span class="rep-commission">${VFUtils.sanitize(commission)}</span>` : ''}
+                </div>
+                <div class="rep-product-actions">
+                    <button type="button" class="rep-copy-btn" data-copy="${VFUtils.sanitize(link)}" aria-label="Copy share link for ${VFUtils.sanitize(p.name)}">Copy link</button>
+                    <a class="rep-share-btn" href="${waShare}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                    ${shareBtn}
+                </div>
+            </div>
+        `;
+    },
+
+    fallbackCopy(text) {
+        return new Promise((resolve, reject) => {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy') ? resolve() : reject(new Error('copy failed'));
+            } catch (err) {
+                reject(err);
+            } finally {
+                document.body.removeChild(ta);
+            }
+        });
+    },
+
+    copyText(text, btn) {
+        const original = btn.textContent;
+        const done = () => {
+            btn.classList.add('copied');
+            btn.textContent = 'Copied!';
+            setTimeout(() => {
+                btn.classList.remove('copied');
+                btn.textContent = original;
+            }, 2000);
+        };
+        Promise.resolve()
+            .then(() => navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
+            .then(done)
+            .catch(() => this.fallbackCopy(text).then(done))
+            .catch(() => {});
+    },
+
+    renderPayouts() {
+        const rows = this._payoutRows || [];
+        this._payouts = rows.filter(r => String(r.rep_id || '').trim().toLowerCase() === String(this._rep.rep_id).toLowerCase());
+        this._payoutShown = Math.min(this.REP_PAYOUT_LIMIT, this._payouts.length);
+        this.renderPayoutTable();
+    },
+
+    payoutRowHTML(r) {
+        const naira = n => '₦' + Math.round(n).toLocaleString();
+        const amount = parseFloat(r.order_amount) || 0;
+        const commission = parseFloat(r.commission) || 0;
+        const paid = String(r.status || '').toLowerCase() === 'paid';
+        return `
+            <tr>
+                <td>${VFUtils.sanitize(r.product)}</td>
+                <td>${VFUtils.sanitize(naira(amount))}</td>
+                <td>${VFUtils.sanitize(naira(commission))}</td>
+                <td><span class="rep-status ${paid ? 'paid' : 'pending'}">${VFUtils.sanitize(paid ? 'Paid' : 'Pending')}</span></td>
+                <td>${VFUtils.sanitize(r.date)}</td>
+            </tr>
+        `;
+    },
+
+    renderPayoutTable() {
         const tbody = document.querySelector('#rep-payouts tbody');
         const summary = document.getElementById('rep-payout-summary');
         const table = document.getElementById('rep-payouts');
-        const mine = rows.filter(r => String(r.rep_id || '').trim().toLowerCase() === String(this._rep.rep_id).toLowerCase());
+        const mine = this._payouts || [];
         const naira = n => '₦' + Math.round(n).toLocaleString();
+        const setStats = (sales, pending, paid) => {
+            const set = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+            set('rep-stat-sales', String(sales));
+            set('rep-stat-pending', naira(pending));
+            set('rep-stat-paid', naira(paid));
+        };
 
         if (mine.length === 0) {
             tbody.innerHTML = '';
             table.classList.add('hidden');
+            setStats(0, 0, 0);
             summary.textContent = 'No commissions recorded yet. Sales you refer will appear here once the owner confirms them.';
             summary.classList.remove('hidden');
             return;
         }
 
+        const shown = Math.min(this._payoutShown, mine.length);
+        let body = mine.slice(0, shown).map(r => this.payoutRowHTML(r)).join('');
+        const more = mine.length - shown;
+        if (more > 0) {
+            body += `<tr class="rep-showall-row"><td colspan="5"><button type="button" class="rep-showall" id="rep-showall-btn">Show all commissions (${more} more)</button></td></tr>`;
+        }
+        tbody.innerHTML = body;
+
         let pendingTotal = 0;
         let paidTotal = 0;
-        tbody.innerHTML = mine.map(r => {
-            const amount = parseFloat(r.order_amount) || 0;
+        mine.forEach(r => {
             const commission = parseFloat(r.commission) || 0;
             const paid = String(r.status || '').toLowerCase() === 'paid';
             if (paid) paidTotal += commission; else pendingTotal += commission;
-            return `
-                <tr>
-                    <td>${this.sanitize(r.product)}</td>
-                    <td>${this.sanitize(naira(amount))}</td>
-                    <td>${this.sanitize(naira(commission))}</td>
-                    <td><span class="rep-status ${paid ? 'paid' : 'pending'}">${this.sanitize(paid ? 'Paid' : 'Pending')}</span></td>
-                    <td>${this.sanitize(r.date)}</td>
-                </tr>
-            `;
-        }).join('');
+        });
 
         table.classList.remove('hidden');
+        setStats(mine.length, pendingTotal, paidTotal);
         summary.classList.remove('hidden');
-        summary.textContent = `Pending: ${naira(pendingTotal)} · Paid: ${naira(paidTotal)}`;
+        const saleLabel = mine.length === 1 ? 'sale' : 'sales';
+        summary.textContent = `${mine.length} ${saleLabel} · Pending: ${naira(pendingTotal)} · Paid: ${naira(paidTotal)}`;
+    },
+
+    showAllPayouts() {
+        this._payoutShown = (this._payouts || []).length;
+        this.renderPayoutTable();
     },
 
     init() {
@@ -248,13 +320,18 @@ const RepTools = {
             const shareBtn = e.target.closest('[data-share]');
             if (shareBtn) {
                 navigator.share({ title: 'Gifts by VF', url: shareBtn.getAttribute('data-share') }).catch(() => {});
+                return;
             }
+            if (e.target.closest('#load-more-rep-products-btn')) this.showMoreRepProducts();
         });
-        const saved = sessionStorage.getItem(this._sessionKey);
-        if (saved) {
-            document.getElementById('rep-input').value = saved;
-            this.login(saved);
+        const payoutsTable = document.getElementById('rep-payouts');
+        if (payoutsTable) {
+            payoutsTable.addEventListener('click', (e) => {
+                if (e.target.closest('#rep-showall-btn')) this.showAllPayouts();
+            });
         }
+        const saved = sessionStorage.getItem(this._sessionKey);
+        if (saved) document.getElementById('rep-input').value = saved;
     }
 };
 

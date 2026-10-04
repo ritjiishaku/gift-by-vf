@@ -3,51 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Rep Tools — Gifts by VF</title>
+    <title>Sales Rep Tools &mdash; Gifts by VF</title>
     <meta name="robots" content="noindex">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=9">
 </head>
 <body>
 
+<!-- SVG sprite (hidden) &mdash; referenced by <use href="#icon-*"/> -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="icon-whatsapp" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></symbol>
+    <symbol id="icon-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
+</svg>
+
 <header class="rep-header">
-    <a href="index.html" class="nav-logo"><span class="brand-text">Gifts by V</span><span class="brand-accent">F</span></a>
+    <a href="index.html" class="nav-logo" aria-label="Gifts by VF">
+        <span class="brand-name"><span class="brand-text">Gifts by V</span><span class="brand-accent">F</span></span>
+        <span class="nav-tagline">Bespoke Gifts</span>
+    </a>
     <span class="rep-tag">Sales Rep Tools</span>
 </header>
 
-<!-- LOGIN -->
-<section id="rep-login" class="rep-section">
-    <h2>Sales Rep Login</h2>
-    <p class="rep-hint">Enter the rep code the owner gave you (e.g. <strong>kofi</strong>). You'll get your share links and commission status.</p>
-    <form id="rep-form" class="rep-form">
-        <input type="text" id="rep-input" placeholder="Your rep code" autocomplete="off">
-        <button type="submit" class="rep-btn">Continue</button>
-    </form>
-    <p id="rep-error" class="rep-error hidden"></p>
-</section>
+<main class="rep-page-shell">
+    <section class="page-hero rep-hero">
+        <div class="page-hero-copy">
+            <p class="section-label">Sales portal</p>
+            <h1>Share gifts and track commission</h1>
+            <p>Login with your rep code to get personalised product links and monitor your confirmed sales.</p>
+        </div>
+        <div class="gift-chips" aria-label="Rep features">
+            <span>Share links</span>
+            <span>Track payouts</span>
+            <span>Earn commission</span>
+        </div>
+    </section>
 
-<!-- DASHBOARD -->
-<section id="rep-dashboard" class="rep-section hidden">
-    <h2>Hi, <span id="rep-name"></span></h2>
-    <p class="rep-hint">Your commission rate: <strong id="rep-rate"></strong></p>
+    <!-- LOGIN -->
+    <section id="rep-login" class="rep-section rep-panel">
+        <h2>Sales Rep Login</h2>
+        <p class="rep-hint">Enter the rep code the owner gave you (for example, <strong>kofi</strong>). You'll get your personalised share links and commission status.</p>
+        <form id="rep-form" class="rep-form">
+            <input type="text" id="rep-input" placeholder="Your rep code" autocomplete="off">
+            <button type="submit" class="rep-btn">Continue</button>
+        </form>
+        <p id="rep-error" class="rep-error hidden"></p>
+    </section>
 
-    <h3>Your Product Links</h3>
-    <p class="rep-hint">Copy a link and share it on WhatsApp, Instagram, or Facebook. When a buyer clicks it and orders, you earn commission.</p>
-    <div id="rep-products"></div>
+    <!-- DASHBOARD -->
+    <section id="rep-dashboard" class="rep-section rep-panel hidden">
+        <h2>Hi, <span id="rep-name"></span></h2>
+        <p class="rep-hint">Your commission rate: <strong id="rep-rate"></strong></p>
+        <p id="rep-rule" class="rep-hint"></p>
+        <p id="rep-credit" class="rep-hint"></p>
 
-    <h3>Your Commissions</h3>
-    <p class="rep-hint">Only sales the owner has confirmed appear here — none yet means no confirmed sales.</p>
-    <p id="rep-payout-summary" class="rep-hint hidden"></p>
-    <table id="rep-payouts" class="rep-table">
-        <thead>
-            <tr><th>Product</th><th>Order Amount</th><th>Commission</th><th>Status</th><th>Date</th></tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+        <h3>Your Product Links</h3>
+        <p class="rep-hint">Copy a link and share it on WhatsApp, Instagram, or Facebook. When a buyer clicks it and places an order, you earn commission.</p>
+        <div id="rep-products"></div>
 
-    <button id="rep-logout" class="rep-btn rep-btn-ghost">Start over</button>
-</section>
+        <h3>Your Commissions</h3>
+        <p class="rep-hint">Only sales the owner has confirmed appear here.</p>
+        <div class="rep-stats" id="rep-stats" aria-label="Commission summary">
+            <div class="rep-stat">
+                <span class="rep-stat-num" id="rep-stat-rate">&mdash;</span>
+                <span class="rep-stat-label">Commission rate</span>
+            </div>
+            <div class="rep-stat">
+                <span class="rep-stat-num" id="rep-stat-sales">0</span>
+                <span class="rep-stat-label">Confirmed sales</span>
+            </div>
+            <div class="rep-stat">
+                <span class="rep-stat-num" id="rep-stat-pending">&#8358;0</span>
+                <span class="rep-stat-label">Pending</span>
+            </div>
+            <div class="rep-stat">
+                <span class="rep-stat-num" id="rep-stat-paid">&#8358;0</span>
+                <span class="rep-stat-label">Paid</span>
+            </div>
+        </div>
+        <p id="rep-payout-summary" class="rep-hint hidden"></p>
+        <table id="rep-payouts" class="rep-table">
+            <thead>
+                <tr><th>Product</th><th>Order Amount</th><th>Commission</th><th>Status</th><th>Date</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
 
-<script src="js/reps.js"></script>
+        <button id="rep-logout" class="rep-btn rep-btn-ghost">Start over</button>
+    </section>
+</main>
+
+<script src="js/shared.js?v=9"></script>
+<script src="js/reps.js?v=9"></script>
 
 </body>
 </html>
