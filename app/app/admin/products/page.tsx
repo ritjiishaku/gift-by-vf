@@ -17,6 +17,9 @@ export default function AdminProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imageUrl, setImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -29,6 +32,37 @@ export default function AdminProductsPage() {
     loadProducts();
   }, []);
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError("");
+
+    const body = new FormData();
+    body.append("file", file);
+
+    try {
+      const response = await fetch("/api/admin/upload", {
+        method: "POST",
+        body,
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        setUploadError(result.message || "Failed to upload image.");
+        setUploading(false);
+        return;
+      }
+
+      setImageUrl(result.url);
+    } catch {
+      setUploadError("Image upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -38,7 +72,7 @@ export default function AdminProductsPage() {
       description: String(formData.get("description") || "Newly added product from the Gift by VF admin panel."),
       category: String(formData.get("category") || "Jewelry"),
       price: String(formData.get("price") || "₦0"),
-      image: String(formData.get("image") || "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=900&h=900&q=80"),
+      image: imageUrl || String(formData.get("image") || "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=900&h=900&q=80"),
     };
 
     const nextProducts = [nextProduct, ...products];
@@ -50,6 +84,7 @@ export default function AdminProductsPage() {
       body: JSON.stringify({ products: nextProducts }),
     });
 
+    setImageUrl("");
     event.currentTarget.reset();
   };
 
@@ -94,11 +129,11 @@ export default function AdminProductsPage() {
             <h3>Add new product</h3>
             <label>
               Product name
-              <input name="name" type="text" placeholder="Custom Name Plaque" />
+              <input name="name" type="text" placeholder="Custom Name Plaque" required />
             </label>
             <label>
               Description
-              <textarea name="description" placeholder="Premium personalized gift with custom engraving." rows={3} />
+              <textarea name="description" placeholder="Premium personalized gift with custom engraving." rows={3} required />
             </label>
             <label>
               Category
@@ -112,13 +147,33 @@ export default function AdminProductsPage() {
             </label>
             <label>
               Price
-              <input name="price" type="text" placeholder="₦19,000" />
+              <input name="price" type="text" placeholder="₦19,000" required />
             </label>
             <label>
-              Image URL
-              <input name="image" type="url" placeholder="https://..." />
+              Upload Photo File
+              <input type="file" accept="image/*" onChange={handleFileUpload} />
+              {uploading ? <small style={{ color: "#d4af37" }}>Uploading photo...</small> : null}
+              {uploadError ? <small style={{ color: "#ff4d4d" }}>{uploadError}</small> : null}
             </label>
-            <button type="submit" className="rep-btn">Save product</button>
+            <label>
+              Or Image URL
+              <input
+                name="image"
+                type="text"
+                value={imageUrl}
+                onChange={(event) => setImageUrl(event.target.value)}
+                placeholder="Upload file above or paste https://..."
+              />
+            </label>
+            {imageUrl ? (
+              <div style={{ marginTop: "10px", marginBottom: "15px" }}>
+                <p style={{ fontSize: "12px", color: "var(--text-muted, #a0a0a0)", marginBottom: "5px" }}>Image preview:</p>
+                <img src={imageUrl} alt="Preview" style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)" }} />
+              </div>
+            ) : null}
+            <button type="submit" className="rep-btn" disabled={uploading}>
+              {uploading ? "Uploading..." : "Save product"}
+            </button>
           </form>
 
           <div className="admin-list">
