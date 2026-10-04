@@ -131,20 +131,39 @@ export default function AdminProductsPage() {
                     <th>Category</th>
                     <th>Price</th>
                     <th>Image</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={4}>Loading products...</td>
+                      <td colSpan={5}>Loading products...</td>
                     </tr>
                   ) : (
-                    products.map((product) => (
-                      <tr key={`${product.name}-${product.price}`}>
+                    products.map((product, index) => (
+                      <tr key={`${product.name}-${index}`}>
                         <td>{product.name}</td>
                         <td>{product.category}</td>
                         <td>{product.price}</td>
                         <td>{product.image ? "Linked" : "—"}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="table-action danger"
+                            onClick={async () => {
+                              if (!window.confirm(`Delete "${product.name}"?`)) return;
+                              const nextProducts = products.filter((_, i) => i !== index);
+                              setProducts(nextProducts);
+                              await fetch("/api/admin/content", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ products: nextProducts }),
+                              });
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}
