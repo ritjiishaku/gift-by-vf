@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=10">
+    <link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
 
@@ -52,84 +52,118 @@
     </section>
 
     <!-- DASHBOARD -->
-    <section id="rep-dashboard" class="rep-section rep-panel hidden">
-        <h2>Hi, <span id="rep-name"></span></h2>
-        <p class="rep-hint">Your commission rate: <strong id="rep-rate"></strong></p>
-        <p id="rep-rule" class="rep-hint"></p>
-        <p id="rep-credit" class="rep-hint"></p>
-
-        <h3>Your Product Links</h3>
-        <p class="rep-hint">Copy a link and share it on WhatsApp, Instagram, or Facebook. When a buyer clicks it and places an order, you earn commission.</p>
-        <p id="rep-product-count" class="rep-product-count" role="status" aria-live="polite">Loading product catalogue...</p>
-        <div class="rep-catalogue-controls" aria-label="Filter product links">
-            <label class="rep-filter-field rep-filter-search">
-                <span>Search products</span>
-                <input type="search" id="rep-product-search" placeholder="Name, description, material...">
-            </label>
-            <label class="rep-filter-field">
-                <span>Category</span>
-                <select id="rep-product-category"><option value="all">All categories</option></select>
-            </label>
-            <label class="rep-filter-field">
-                <span>Price</span>
-                <select id="rep-product-price">
-                    <option value="any">Any price</option>
-                    <option value="under-20000">Under ₦20,000</option>
-                    <option value="20000-50000">₦20,000–₦50,000</option>
-                    <option value="above-50000">Above ₦50,000</option>
-                </select>
-            </label>
-            <label class="rep-filter-field">
-                <span>Occasion</span>
-                <select id="rep-product-occasion"><option value="all">All occasions</option></select>
-            </label>
-            <label class="rep-filter-field">
-                <span>Sort by</span>
-                <select id="rep-product-sort">
-                    <option value="featured">Catalogue order</option>
-                    <option value="price-asc">Price: Low to High</option>
-                    <option value="price-desc">Price: High to Low</option>
-                    <option value="name-asc">Name: A to Z</option>
-                </select>
-            </label>
-            <button type="button" id="rep-product-clear" class="rep-btn rep-btn-ghost rep-filter-clear">Clear filters</button>
+    <section id="rep-dashboard" class="rep-dashboard hidden">
+        <div class="rep-dashboard-intro">
+            <div>
+                <p class="section-label">Sales portal</p>
+                <h2>Welcome back, <span id="rep-name"></span></h2>
+                <p>Find a gift to share or check your latest commission activity.</p>
+            </div>
+            <button id="rep-logout" class="rep-btn rep-logout" type="button">Start over</button>
         </div>
-        <div id="rep-products"></div>
 
-        <h3>Your Commissions</h3>
-        <p class="rep-hint">Only sales the owner has confirmed appear here.</p>
-        <div class="rep-stats" id="rep-stats" aria-label="Commission summary">
-            <div class="rep-stat">
-                <span class="rep-stat-num" id="rep-stat-rate">&mdash;</span>
-                <span class="rep-stat-label">Commission rate</span>
-            </div>
-            <div class="rep-stat">
-                <span class="rep-stat-num" id="rep-stat-sales">0</span>
-                <span class="rep-stat-label">Confirmed sales</span>
-            </div>
-            <div class="rep-stat">
-                <span class="rep-stat-num" id="rep-stat-pending">&#8358;0</span>
-                <span class="rep-stat-label">Pending</span>
-            </div>
-            <div class="rep-stat">
-                <span class="rep-stat-num" id="rep-stat-paid">&#8358;0</span>
-                <span class="rep-stat-label">Paid</span>
-            </div>
+        <div class="rep-dashboard-layout">
+            <aside class="rep-earnings-sidebar" aria-label="Your earnings">
+                <div class="rep-earnings-card">
+                    <p class="section-label">Your performance</p>
+                    <h3>Commission overview</h3>
+                    <div class="rep-stats" id="rep-stats" aria-label="Commission summary">
+                        <div class="rep-stat">
+                            <span class="rep-stat-num" id="rep-stat-rate">&mdash;</span>
+                            <span class="rep-stat-label">Commission rate</span>
+                        </div>
+                        <div class="rep-stat">
+                            <span class="rep-stat-num" id="rep-stat-sales">0</span>
+                            <span class="rep-stat-label">Confirmed sales</span>
+                        </div>
+                        <div class="rep-stat">
+                            <span class="rep-stat-num" id="rep-stat-pending">&#8358;0</span>
+                            <span class="rep-stat-label">Pending</span>
+                        </div>
+                        <div class="rep-stat">
+                            <span class="rep-stat-num" id="rep-stat-paid">&#8358;0</span>
+                            <span class="rep-stat-label">Paid</span>
+                        </div>
+                    </div>
+                    <p id="rep-rule" class="rep-hint"></p>
+                    <p id="rep-credit" class="rep-hint"></p>
+                    <a class="rep-history-link" href="#rep-commission-history" id="rep-history-link">View payout history <span aria-hidden="true">&rarr;</span></a>
+                </div>
+            </aside>
+
+            <section class="rep-catalogue-panel" aria-labelledby="rep-products-title">
+                <div class="rep-catalogue-heading">
+                    <p class="section-label">Product catalogue</p>
+                    <h3 id="rep-products-title">Your product links</h3>
+                    <p class="rep-hint">Copy a link and share it on WhatsApp, Instagram, or Facebook. Orders through your link earn you commission.</p>
+                </div>
+                <div class="rep-catalogue-toolbar">
+                    <div class="rep-catalogue-toolbar-row">
+                        <p id="rep-product-count" class="rep-product-count" role="status" aria-live="polite">Loading product catalogue...</p>
+                        <label class="rep-filter-field rep-filter-search">
+                            <span>Search products</span>
+                            <input type="search" id="rep-product-search" placeholder="Name, description, material..." autocomplete="off">
+                        </label>
+                    </div>
+                    <details id="rep-product-filter-details" class="rep-filter-details" open>
+                        <summary>Filters and sorting</summary>
+                        <div class="rep-catalogue-controls" aria-label="Filter product links">
+                            <label class="rep-filter-field">
+                                <span>Category</span>
+                                <select id="rep-product-category"><option value="all">All categories</option></select>
+                            </label>
+                            <label class="rep-filter-field">
+                                <span>Price</span>
+                                <select id="rep-product-price">
+                                    <option value="any">Any price</option>
+                                    <option value="under-20000">Under ₦20,000</option>
+                                    <option value="20000-50000">₦20,000–₦50,000</option>
+                                    <option value="above-50000">Above ₦50,000</option>
+                                </select>
+                            </label>
+                            <label class="rep-filter-field">
+                                <span>Occasion</span>
+                                <select id="rep-product-occasion"><option value="all">All occasions</option></select>
+                            </label>
+                            <label class="rep-filter-field">
+                                <span>Sort by</span>
+                                <select id="rep-product-sort">
+                                    <option value="featured">Catalogue order</option>
+                                    <option value="price-asc">Price: Low to High</option>
+                                    <option value="price-desc">Price: High to Low</option>
+                                    <option value="name-asc">Name: A to Z</option>
+                                </select>
+                            </label>
+                            <button type="button" id="rep-product-clear" class="rep-btn rep-btn-ghost rep-filter-clear">Clear filters</button>
+                        </div>
+                    </details>
+                </div>
+                <div id="rep-products" class="rep-products-grid"></div>
+            </section>
+
+            <details id="rep-commission-history" class="rep-commission-history">
+                <summary>
+                    <span>Commission history</span>
+                    <span class="rep-history-summary-hint">Confirmed sales and payout details</span>
+                </summary>
+                <div class="rep-commission-history-content">
+                    <p id="rep-payout-summary" class="rep-hint hidden"></p>
+                    <div class="rep-table-scroll">
+                        <table id="rep-payouts" class="rep-table">
+                            <thead>
+                                <tr><th>Product</th><th>Order Amount</th><th>Commission</th><th>Status</th><th>Date</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
         </div>
-        <p id="rep-payout-summary" class="rep-hint hidden"></p>
-        <table id="rep-payouts" class="rep-table">
-            <thead>
-                <tr><th>Product</th><th>Order Amount</th><th>Commission</th><th>Status</th><th>Date</th></tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <button id="rep-logout" class="rep-btn rep-btn-ghost">Start over</button>
     </section>
 </main>
 
 <script src="js/shared.js?v=9"></script>
-<script src="js/reps.js?v=10"></script>
+<script src="js/reps.js?v=11"></script>
 
 </body>
 </html>

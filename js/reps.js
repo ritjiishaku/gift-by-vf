@@ -52,6 +52,7 @@ const RepTools = {
     renderDashboard() {
         document.getElementById('rep-login').classList.add('hidden');
         document.getElementById('rep-dashboard').classList.remove('hidden');
+        document.body.classList.add('rep-authenticated');
         this.setText('rep-name', this._rep.name);
         const rawRate = String(this._rep.rate || '').trim();
         let rateText = rawRate;
@@ -60,7 +61,6 @@ const RepTools = {
         } else if (rawRate && !rawRate.endsWith('%')) {
             rateText = rawRate + '%';
         }
-        this.setText('rep-rate', rateText);
         this.setText('rep-rule', `Commission is ${rateText} of the product's catalogue price, excluding delivery.`);
         this.setText('rep-credit', `Any order placed through your links within ${this.REP_CREDIT_WINDOW_DAYS} days of the buyer's first click is credited to you.`);
         const rateStat = document.getElementById('rep-stat-rate');
@@ -333,11 +333,11 @@ const RepTools = {
         const paid = String(r.status || '').toLowerCase() === 'paid';
         return `
             <tr>
-                <td>${VFUtils.sanitize(r.product)}</td>
-                <td>${VFUtils.sanitize(naira(amount))}</td>
-                <td>${VFUtils.sanitize(naira(commission))}</td>
-                <td><span class="rep-status ${paid ? 'paid' : 'pending'}">${VFUtils.sanitize(paid ? 'Paid' : 'Pending')}</span></td>
-                <td>${VFUtils.sanitize(r.date)}</td>
+                <td data-label="Product">${VFUtils.sanitize(r.product)}</td>
+                <td data-label="Order amount">${VFUtils.sanitize(naira(amount))}</td>
+                <td data-label="Commission">${VFUtils.sanitize(naira(commission))}</td>
+                <td data-label="Status"><span class="rep-status ${paid ? 'paid' : 'pending'}">${VFUtils.sanitize(paid ? 'Paid' : 'Pending')}</span></td>
+                <td data-label="Date">${VFUtils.sanitize(r.date)}</td>
             </tr>
         `;
     },
@@ -395,8 +395,22 @@ const RepTools = {
         this.renderPayoutTable();
     },
 
+    configureResponsivePanels() {
+        const filterDetails = document.getElementById('rep-product-filter-details');
+        const historyDetails = document.getElementById('rep-commission-history');
+        const mobile = window.matchMedia('(max-width: 767px)');
+        const syncPanels = () => {
+            if (filterDetails) filterDetails.open = !mobile.matches;
+            if (historyDetails) historyDetails.open = !mobile.matches;
+        };
+        syncPanels();
+        if (mobile.addEventListener) mobile.addEventListener('change', syncPanels);
+        else if (mobile.addListener) mobile.addListener(syncPanels);
+    },
+
     init() {
         this.bindProductFilters();
+        this.configureResponsivePanels();
         document.getElementById('rep-form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.login(document.getElementById('rep-input').value);
@@ -405,6 +419,13 @@ const RepTools = {
             sessionStorage.removeItem(this._sessionKey);
             location.reload();
         });
+        const historyLink = document.getElementById('rep-history-link');
+        if (historyLink) {
+            historyLink.addEventListener('click', () => {
+                const history = document.getElementById('rep-commission-history');
+                if (history) history.open = true;
+            });
+        }
         document.getElementById('rep-products').addEventListener('click', (e) => {
             const copyBtn = e.target.closest('[data-copy]');
             if (copyBtn) {
