@@ -3,8 +3,6 @@
 
 const RepTools = {
     TABS: { SETTINGS: 'Site Settings', REPS: 'Sales Reps', PRODUCTS: 'Products', PAYOUTS: 'Payouts' },
-    REP_PRODUCT_LIMIT: 8,
-    REP_PRODUCT_CHUNK: 8,
     REP_PAYOUT_LIMIT: 5,
     REP_CREDIT_WINDOW_DAYS: 30,
     _sessionKey: 'vf_rep_session',
@@ -97,10 +95,6 @@ const RepTools = {
             }
         });
         this._repProducts = this.dedupeProducts(VFUtils.filterAndSort(products || []));
-        const deepLink = new URLSearchParams(location.search).get('p');
-        this._repProductShown = deepLink
-            ? this._repProducts.length
-            : Math.min(this.REP_PRODUCT_LIMIT, this._repProducts.length);
         this.renderProductList();
         this._payoutRows = payouts || [];
         this.renderPayouts();
@@ -113,38 +107,7 @@ const RepTools = {
             container.innerHTML = '<p class="rep-empty">No products available yet.</p>';
             return;
         }
-        const shown = Math.min(this._repProductShown, items.length);
-        let html = items.slice(0, shown).map((p, i) => this.repProductCardHTML(p, i)).join('');
-        const more = items.length - shown;
-        if (more > 0) html += VFUtils.loadMoreButton(more, 'load-more-rep-products-btn');
-        container.innerHTML = html;
-    },
-
-    showMoreRepProducts() {
-        const items = this._repProducts || [];
-        const container = document.getElementById('rep-products');
-        if (!container || items.length === 0) return;
-        const append = Math.min(this.REP_PRODUCT_CHUNK, items.length - this._repProductShown);
-        if (append <= 0) return;
-        const start = this._repProductShown;
-        this._repProductShown += append;
-
-        const html = items.slice(start, start + append).map((p, i) => this.repProductCardHTML(p, start + i)).join('');
-
-        let btn = container.querySelector('#load-more-rep-products-btn');
-        if (btn) {
-            const wrap = btn.closest('.load-more-wrap');
-            if (wrap) wrap.insertAdjacentHTML('beforebegin', html);
-            else container.insertAdjacentHTML('beforeend', html);
-            const remaining = items.length - this._repProductShown;
-            if (remaining > 0) {
-                btn.textContent = `Show more (${remaining} more)`;
-            } else {
-                btn.closest('.load-more-wrap').remove();
-            }
-        } else {
-            container.insertAdjacentHTML('beforeend', html);
-        }
+        container.innerHTML = items.map((product, index) => this.repProductCardHTML(product, index)).join('');
     },
 
     estimatedCommission(p) {
@@ -322,7 +285,6 @@ const RepTools = {
                 navigator.share({ title: 'Gifts by VF', url: shareBtn.getAttribute('data-share') }).catch(() => {});
                 return;
             }
-            if (e.target.closest('#load-more-rep-products-btn')) this.showMoreRepProducts();
         });
         const payoutsTable = document.getElementById('rep-payouts');
         if (payoutsTable) {
