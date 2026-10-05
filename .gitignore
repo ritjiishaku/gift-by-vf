@@ -4,3 +4,9 @@
 sample-data/
 *.md
 !README.md
+node_modules
+.env*
+!.env.example
+**/.next/
+app/buildlog.txt
+app/next-env.d.ts
