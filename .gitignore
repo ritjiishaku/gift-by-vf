@@ -4,9 +4,15 @@
 sample-data/
 *.md
 !README.md
+!AGENTS.md
+!UPGRADE_PLAN.md
+!cms/SETUP.md
 node_modules
+cms/dist/
+public/
 .env*
 !.env.example
 **/.next/
+*.tsbuildinfo
 app/buildlog.txt
 app/next-env.d.ts

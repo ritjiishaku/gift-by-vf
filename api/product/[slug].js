@@ -4,6 +4,7 @@ const SITE_URL = 'https://vf-gift-shop.vercel.app';
 const WHATSAPP_NUMBER = '2348127252004';
 const DEFAULT_IMAGE = 'https://lh3.googleusercontent.com/d/1I2iMEg47s7_ik0trBhvqbgrJIBQmFIBB';
 const DEFAULT_DESCRIPTION = 'Gifts by VF handcrafts personalized jewelry, acrylic frames, and custom gifts for birthdays, weddings, and corporate events. Order on WhatsApp, delivered across Nigeria.';
+const { getPublicCollection } = require('../../lib/neon-content');
 
 function q(value) {
     return String(Array.isArray(value) ? value[0] : (value == null ? '' : value)).trim();
@@ -151,6 +152,13 @@ function visibleProducts(rows) {
 }
 
 async function findProduct(slug) {
+    if (process.env.CMS_CONTENT_BACKEND === 'neon') {
+        const rows = await getPublicCollection('products');
+        const target = slugify(slug);
+        return rows.find((product) => slugify(product.name) === target)
+            || (/^\d+$/.test(target) ? rows.find((product) => String(product.display_order || '').trim() === target) : null)
+            || null;
+    }
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Products`;
     const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to fetch Products');
@@ -305,6 +313,13 @@ module.exports = async function handler(req, res) {
             const product = await findProduct(slug);
             html = product ? productPage(product, slug, ref) : genericPage(ref);
         } catch (err) {
+            if (process.env.CMS_CONTENT_BACKEND === 'neon') {
+                console.error('Could not load the shared product:', err.message);
+                res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+                res.setHeader('Cache-Control', 'no-store');
+                res.status(503).setHeader('Retry-After', '60');
+                return res.send('Catalogue content is temporarily unavailable. Please try again shortly.');
+            }
             html = genericPage(ref);
         }
     } else {

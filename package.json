@@ -1,0 +1,17 @@
+{
+  "name": "gifts-by-vf-site",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "cms"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace gifts-by-vf-cms-preview && node scripts/build-site.cjs",
+    "vercel-build": "npm run build --workspace gifts-by-vf-cms-preview && node scripts/build-site.cjs",
+    "import:neon": "node scripts/import-public-content-to-neon.cjs",
+    "test:cms": "node --test tests/neon-content.test.cjs"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.0"
+  }
+}
