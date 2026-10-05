@@ -67,6 +67,8 @@ const VF = {
 
     PRODUCT_LIMIT: 12,
     PRODUCT_CHUNK: 12,
+    CATEGORY_PRODUCT_LIMIT: 6,
+    CATEGORY_PRODUCT_CHUNK: 6,
     FEATURED_LIMIT: 6,
     TESTIMONIAL_LIMIT: 6,
 
@@ -95,9 +97,200 @@ const VF = {
 
     _cache: {},
     _fadeObserver: null,
+    _taxonomy: [],
+    _siteSettings: {},
+    _activeSubcategory: 'all',
+    _activeProductType: 'all',
+    _shownByCategoryGroup: {},
 
     async fetchTab(tabName) {
         return VFUtils.fetchTab(tabName, VFUtils.SHEET_ID, this._cache);
+    },
+
+    async loadProductTaxonomy() {
+        if (this._taxonomy && this._taxonomy.length) return this._taxonomy;
+        try {
+            const response = await fetch('/js/product-taxonomy.json', { cache: 'no-cache' });
+            if (!response.ok) throw new Error('Could not load catalogue categories');
+            const json = await response.json();
+            this._taxonomy = Array.isArray(json.categories) ? json.categories : [];
+        } catch (err) {
+            this._taxonomy = [];
+        }
+        return this._taxonomy;
+    },
+
+    normalizeTaxonomyText(value) {
+        return String(value || '').trim().toLowerCase()
+            .replace(/customised/g, 'customized')
+            .replace(/customise/g, 'customize')
+            .replace(/jewellery/g, 'jewelry')
+            .replace(/wrist\s*watch/g, 'watch')
+            .replace(/t[ -]?shirt/g, 'tshirt')
+            .replace(/[^a-z0-9]+/g, ' ')
+            .trim();
+    },
+
+    taxonomyCategoryForProduct(product) {
+        if (!product || !this._taxonomy) return null;
+        const categoryText = this.normalizeTaxonomyText(product.category);
+        const titleText = this.normalizeTaxonomyText(product.name);
+        const match = this._taxonomy.find(category => {
+            const names = [category.name, ...(category.legacyAliases || [])]
+                .map(value => this.normalizeTaxonomyText(value));
+            return names.includes(categoryText) || names.some(value => value && categoryText.includes(value))
+                || (categoryText === '' && titleText && names.some(value => value && titleText.includes(value)));
+        });
+        if (match) return match;
+        const productText = this.normalizeTaxonomyText([product.category, product.name].join(' '));
+        if (/jewel|necklace|bracelet|cufflink|anklet|anklet|ring|waist chain/.test(productText)) {
+            return this._taxonomy.find(category => category.name === 'Customized Jewelry') || null;
+        }
+        if (/signage|neon|indoor sign/.test(productText)) {
+            return this._taxonomy.find(category => category.name === 'Brand Signages') || null;
+        }
+        if (/picture|acrylic|frame|frameless|enlargement/.test(productText)) {
+            return this._taxonomy.find(category => category.name === 'Picture Enlargement') || null;
+        }
+        return this._taxonomy.find(category => category.name === 'More to Love') || null;
+    },
+
+    taxonomySubcategoryForProduct(product) {
+        const category = this.taxonomyCategoryForProduct(product);
+        const explicit = String(product && product.subcategory || '').trim();
+        if (explicit && (!category || !(category.subcategories || []).length
+            || category.subcategories.some(group => group.name.toLowerCase() === explicit.toLowerCase()))) return explicit;
+        if (!category || !Array.isArray(category.subcategories)) return '';
+        const text = this.normalizeTaxonomyText([product.name, product.description].join(' '));
+        if (category.name === 'Customized Jewelry') {
+            return text.includes('engraved') ? 'Engraved' : 'Carved / Customized';
+        }
+        if (category.name === 'Brand Signages') {
+            return text.includes('neon') ? 'Neon Signages' : 'Shaped Indoor Signages';
+        }
+        return '';
+    },
+
+    taxonomyProductTypes(category) {
+        if (!category) return [];
+        if (Array.isArray(category.subcategories) && category.subcategories.length) {
+            return category.subcategories.flatMap(group => group.productTypes || []);
+        }
+        return category.productTypes || [];
+    },
+
+    taxonomyProductTypeForProduct(product) {
+        const explicit = String(product && product.product_type || '').trim();
+        if (explicit) return explicit;
+        const category = this.taxonomyCategoryForProduct(product);
+        const title = this.normalizeTaxonomyText(product && product.name);
+        if (!category || !title) return String(product && product.name || '').trim();
+        if (category.name === 'Picture Enlargement' && title.includes('non acrylic')) {
+            return String(product.name || '').trim();
+        }
+        const choices = this.taxonomyProductTypes(category).slice().sort((a, b) => b.name.length - a.name.length);
+        for (const choice of choices) {
+            const matchValues = [choice.name, ...(choice.aliases || [])]
+                .map(value => this.normalizeTaxonomyText(value))
+                .filter(Boolean);
+            if (matchValues.some(value => title.includes(value))) return choice.name;
+        }
+        return String(product.name || '').trim();
+    },
+
+    browseCategory(categoryName, subcategory, productType) {
+        this._activeCategory = String(categoryName || 'all').toLowerCase();
+        this._activeSubcategory = String(subcategory || 'all').toLowerCase();
+        this._activeProductType = String(productType || 'all').toLowerCase();
+        this._searchQuery = '';
+        this._activeOccasion = 'all';
+        this._priceRange = 'any';
+        const search = document.getElementById('catalogue-search');
+        const price = document.getElementById('catalogue-price');
+        const occasion = document.getElementById('occasion-filter');
+        if (search) search.value = '';
+        if (price) price.value = 'any';
+        if (occasion) occasion.value = 'all';
+        const sort = document.getElementById('catalogue-sort');
+        if (sort) sort.value = this._sort || 'featured';
+        this.renderFilterPills();
+        this.renderOccasionControls();
+        this.renderCategoryExplorer();
+        this.renderCategorySelection();
+        if (this._products) this.applyProductFilters();
+        const target = document.getElementById('products');
+        if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
+    },
+
+    categorySectionId(category) {
+        return `category-${VFUtils.slugify(category && category.name || '')}`;
+    },
+
+    renderCategoryExplorer() {
+        const section = document.getElementById('category-explorer');
+        const grid = document.getElementById('category-explorer-grid');
+        if (!section || !grid) return;
+        if (!Array.isArray(this._taxonomy) || this._taxonomy.length !== 4) {
+            section.hidden = true;
+            return;
+        }
+
+        grid.innerHTML = this._taxonomy.map((category, index) => {
+            const types = this.taxonomyProductTypes(category);
+            const products = (this._products || []).filter(product => {
+                const match = this.taxonomyCategoryForProduct(product);
+                return match && match.name === category.name;
+            });
+            const imageProduct = products.slice().sort((a, b) => Number(this.isFeatured(b)) - Number(this.isFeatured(a)))
+                .find(product => product.image_url && (!VFUtils.videoUrl(product.image_url) || VFUtils.isDriveUrl(product.image_url)));
+            const configuredImage = this.siteImageUrl(this._siteSettings[category.imageSettingKey]);
+            const productImage = imageProduct
+                ? VFUtils.validateUrl(VFUtils.directImageUrl(imageProduct.image_url))
+                : '';
+            const image = configuredImage || productImage;
+            const coverFallback = configuredImage && productImage && configuredImage !== productImage
+                ? ` data-cover-fallback="${VFUtils.sanitize(productImage)}"`
+                : '';
+            const placeholder = `<span class="category-card-placeholder category-placeholder-${index + 1}" aria-hidden="true"><span>0${index + 1}</span><i>Gifts by VF</i></span>`;
+            const media = `${placeholder}${image ? `<img src="${VFUtils.sanitize(image)}"${coverFallback} alt="" loading="lazy" decoding="async" onerror="if(this.dataset.coverFallback&&!this.dataset.didFallback){this.dataset.didFallback='1';this.src=this.dataset.coverFallback;}else{this.remove();}">` : ''}`;
+            const optionCount = types.length;
+            const sectionId = this.categorySectionId(category);
+
+            return `
+                <a class="category-card" href="#${VFUtils.sanitize(sectionId)}" data-category-jump="${VFUtils.sanitize(sectionId)}">
+                    <span class="category-card-media">${media}<span class="category-card-overlay"></span></span>
+                    <span class="category-card-content">
+                        <span class="category-card-meta"><span>0${index + 1}</span><span>${optionCount} styles</span></span>
+                        <strong>${VFUtils.sanitize(category.name)}</strong>
+                        <span class="category-card-description">${VFUtils.sanitize(category.description)}</span>
+                        <span class="category-card-action">Explore collection <span aria-hidden="true">→</span></span>
+                    </span>
+                </a>`;
+        }).join('');
+        section.hidden = false;
+    },
+
+    renderCategorySelection() {
+        const wrap = document.getElementById('category-selection');
+        const label = document.getElementById('category-selection-text');
+        if (!wrap || !label) return;
+        const selected = this._taxonomy.find(category => String(category.name).toLowerCase() === this._activeCategory);
+        if (!selected) {
+            wrap.hidden = true;
+            label.textContent = '';
+            return;
+        }
+        const pieces = [selected.name];
+        if (this._activeSubcategory !== 'all') {
+            const group = (selected.subcategories || []).find(item => item.name.toLowerCase() === this._activeSubcategory);
+            if (group) pieces.push(group.name);
+        }
+        if (this._activeProductType !== 'all') {
+            const product = this.taxonomyProductTypes(selected).find(item => item.name.toLowerCase() === this._activeProductType);
+            if (product) pieces.push(product.name);
+        }
+        label.textContent = `Browsing: ${pieces.join(' · ')}`;
+        wrap.hidden = false;
     },
 
     icon(name) {
@@ -247,11 +440,36 @@ const VF = {
     },
 
     orderMessage(productName, price) {
+        const browseContext = this.categoryBrowseLabel();
         let msg = productName
             ? `Hello! I'd like to order ${productName}${price ? ` (from ${price})` : ''}.`
-            : 'Hello! I would love to place an order with Gifts by VF.';
+            : browseContext
+                ? `Hello! I'd like to enquire about ${browseContext} from your catalogue.`
+                : 'Hello! I would love to place an order with Gifts by VF.';
         if (this._referral) msg += ` I was referred by ${this._referral.name}.`;
         return encodeURIComponent(msg);
+    },
+
+    categoryBrowseLabel() {
+        if (!this._taxonomy || !this._taxonomy.length || this._activeCategory === 'all') return '';
+        const category = this._taxonomy.find(item => item.name.toLowerCase() === this._activeCategory);
+        if (!category) return '';
+        const parts = [category.name];
+        if (this._activeSubcategory !== 'all') {
+            const group = (category.subcategories || []).find(item => item.name.toLowerCase() === this._activeSubcategory);
+            if (group) parts.push(group.name);
+        }
+        if (this._activeProductType !== 'all') {
+            const option = this.taxonomyProductTypes(category).find(item => item.name.toLowerCase() === this._activeProductType);
+            if (option) parts.push(option.name);
+        }
+        return parts.join(' — ');
+    },
+
+    categoryInquiryLink(context) {
+        let message = `Hello! I'd like to enquire about ${context} from your catalogue.`;
+        if (this._referral) message += ` I was referred by ${this._referral.name}.`;
+        return `https://wa.me/${this._waNumber}?text=${encodeURIComponent(message)}`;
     },
 
     waLink(productName, price) {
@@ -288,12 +506,33 @@ const VF = {
 
     // Synchronously paint a settings object onto the DOM.
     _applySettings(settings) {
+        this._siteSettings = settings || {};
         const brandName = settings.brand_name || '';
         const brandAccent = settings.brand_accent || '';
         document.querySelectorAll('.brand-text').forEach(el => (el.textContent = brandName));
         document.querySelectorAll('.brand-accent').forEach(el => (el.textContent = brandAccent));
 
         if (settings.site_title) document.title = settings.site_title;
+
+        const hero = document.getElementById('hero');
+        const heroImage = document.getElementById('hero-background-image');
+        const heroImageUrl = this.siteImageUrl(settings.hero_image_url);
+        if (hero && heroImage) {
+            heroImage.onerror = () => {
+                heroImage.hidden = true;
+                hero.classList.remove('has-owner-hero-image');
+            };
+            if (heroImageUrl) {
+                heroImage.hidden = false;
+                hero.classList.add('has-owner-hero-image');
+                heroImage.src = heroImageUrl;
+            } else {
+                heroImage.hidden = true;
+                heroImage.removeAttribute('src');
+                hero.classList.remove('has-owner-hero-image');
+            }
+        }
+        if (this._taxonomy && this._taxonomy.length) this.renderCategoryExplorer();
 
         if (settings.whatsapp_number) {
             this._waNumber = settings.whatsapp_number.replace(/[^0-9]/g, '');
@@ -329,6 +568,14 @@ const VF = {
 
         const heroWa = document.getElementById('hero-wa');
         if (heroWa) heroWa.href = this.waLink(null, null);
+    },
+
+    siteImageUrl(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        const video = VFUtils.videoUrl(raw);
+        if (video && !VFUtils.isDriveUrl(raw)) return '';
+        return VFUtils.validateUrl(VFUtils.directImageUrl(raw));
     },
 
     settingsFromRows(rows) {
@@ -368,28 +615,26 @@ const VF = {
         const container = document.getElementById('products-grid');
         if (!container) return;
 
-        const rows = await this.fetchTab(this.TABS.PRODUCTS);
+        const [rows] = await Promise.all([
+            this.fetchTab(this.TABS.PRODUCTS),
+            this.loadProductTaxonomy()
+        ]);
         if (rows === null) {
+            this.renderCategoryExplorer();
             this.showCatalogueError("Couldn't load the catalogue right now. Order directly on WhatsApp instead.");
             const count = document.getElementById('catalogue-count');
             if (count) count.textContent = '';
             return;
         }
         const items = VFUtils.filterAndSort(rows);
-        if (items.length === 0) {
-            this.showError('products-grid', 'No products yet.');
-            const count = document.getElementById('catalogue-count');
-            if (count) count.textContent = '';
-            return;
-        }
-
         this._products = items;
+        this.renderCategoryExplorer();
         this._featuredProducts = items.filter(p => this.isFeatured(p));
         this._featuredIds = new Set(this._featuredProducts.map(p => this.keyOf(p)));
         this.renderFilterPills();
+        this.renderCategorySelection();
         this.renderOccasionControls();
         this.renderPriceSelect();
-        this.renderFeaturedStrip();
         this.applyProductFilters();
         this.buildProductJsonLd();
     },
@@ -449,6 +694,8 @@ const VF = {
 
     isFilteredView() {
         return this._activeCategory !== 'all'
+            || this._activeSubcategory !== 'all'
+            || this._activeProductType !== 'all'
             || String(this._searchQuery || '').trim() !== ''
             || this._activeOccasion !== 'all'
             || this._priceRange !== 'any';
@@ -456,8 +703,18 @@ const VF = {
 
     matchesFilters(p) {
         if (this._activeCategory !== 'all') {
-            const cat = String(p.category || '').trim().toLowerCase();
-            if (cat !== this._activeCategory) return false;
+            if (this._taxonomy && this._taxonomy.length) {
+                const cat = this.taxonomyCategoryForProduct(p);
+                if (!cat || cat.name.toLowerCase() !== this._activeCategory) return false;
+            } else if (String(p.category || '').trim().toLowerCase() !== this._activeCategory) {
+                return false;
+            }
+        }
+        if (this._activeSubcategory !== 'all') {
+            if (this.taxonomySubcategoryForProduct(p).toLowerCase() !== this._activeSubcategory) return false;
+        }
+        if (this._activeProductType !== 'all') {
+            if (this.taxonomyProductTypeForProduct(p).toLowerCase() !== this._activeProductType) return false;
         }
         if (this._activeOccasion !== 'all') {
             const tags = String(p.occasion || '').toLowerCase().split(',').map(t => t.trim());
@@ -476,6 +733,11 @@ const VF = {
                 p.name,
                 p.description,
                 p.category,
+                p.subcategory,
+                p.product_type,
+                this.taxonomyCategoryForProduct(p)?.name,
+                this.taxonomySubcategoryForProduct(p),
+                this.taxonomyProductTypeForProduct(p),
                 p.material,
                 p.size,
                 p.price
@@ -565,7 +827,11 @@ const VF = {
 
     _setCategory(key) {
         this._activeCategory = String(key || 'all').toLowerCase();
+        this._activeSubcategory = 'all';
+        this._activeProductType = 'all';
         this.renderFilterPills();
+        this.renderCategoryExplorer();
+        this.renderCategorySelection();
         if (this._products) this.applyProductFilters();
     },
 
@@ -574,16 +840,25 @@ const VF = {
         if (!bar) return;
 
         const products = Array.isArray(this._products) ? this._products : [];
-        const cats = [];
         const counts = {};
-        products.forEach(p => {
-            const c = String(p.category || '').trim();
-            if (c) {
-                const key = c.toLowerCase();
-                counts[key] = (counts[key] || 0) + 1;
-                if (!cats.some(x => x.toLowerCase() === key)) cats.push(c);
-            }
-        });
+        let cats;
+        if (this._taxonomy && this._taxonomy.length) {
+            cats = this._taxonomy.map(category => category.name);
+            products.forEach(product => {
+                const category = this.taxonomyCategoryForProduct(product);
+                if (category) counts[category.name.toLowerCase()] = (counts[category.name.toLowerCase()] || 0) + 1;
+            });
+        } else {
+            cats = [];
+            products.forEach(p => {
+                const c = String(p.category || '').trim();
+                if (c) {
+                    const key = c.toLowerCase();
+                    counts[key] = (counts[key] || 0) + 1;
+                    if (!cats.some(x => x.toLowerCase() === key)) cats.push(c);
+                }
+            });
+        }
 
         const pillLabel = (c) => {
             const key = c === 'All' ? null : c.toLowerCase();
@@ -612,8 +887,6 @@ const VF = {
         const container = document.getElementById('products-grid');
         if (!container) return;
 
-        this.renderFeaturedStrip();
-
         let filtered = allProducts.filter(p => this.matchesFilters(p));
 
         if (this._sort === 'price-asc' || this._sort === 'price-desc') {
@@ -639,6 +912,7 @@ const VF = {
 
         this._lastFiltered = filtered;
         this._productShown = Math.min(this.PRODUCT_LIMIT, filtered.length);
+        this._shownByCategoryGroup = {};
         this.renderProductGrid(filtered);
     },
 
@@ -656,33 +930,111 @@ const VF = {
         const container = document.getElementById('products-grid');
         if (!container) return;
 
-        if (filtered.length === 0) {
-            const featuredVisible = !this.isFilteredView()
-                && this._featuredProducts && this._featuredProducts.length > 0;
-            if (!featuredVisible) {
-                container.innerHTML = `<div class="empty-state">No products match your search.</div>`;
+        if (!this._taxonomy || this._taxonomy.length !== 4) {
+            this.renderFlatProductGrid(filtered, container);
+            return;
+        }
+
+        if (filtered.length === 0 && this.isFilteredView()) {
+            const context = this.categoryBrowseLabel();
+            const message = context
+                ? `We don't have a listed piece for ${context} right now, but it may be available as a custom order.`
+                : 'No products match your current search and filters.';
+            container.innerHTML = `<div class="empty-state category-empty-state"><p>${VFUtils.sanitize(message)}</p><a class="product-order-btn" href="${this.waLink(null, null)}" target="_blank" rel="noopener noreferrer" aria-label="Ask Gifts by VF about ${VFUtils.sanitize(context || 'a gift')}">${this.WA_ICON}<span>${context ? 'Ask us about this' : 'Ask us on WhatsApp'}</span></a></div>`;
+            const count = document.getElementById('catalogue-count');
+            if (count) count.textContent = this.catalogueCountText(0, 0);
+            return;
+        }
+
+        this._visibleProductCount = 0;
+        const sections = this._taxonomy.map((category, index) => {
+            const categoryProducts = filtered.filter(product => this.taxonomyCategoryForProduct(product)?.name === category.name);
+            if (this.isFilteredView() && categoryProducts.length === 0) return '';
+            const groups = category.subcategories || [];
+            const categoryHeading = `
+                <header class="catalogue-category-heading">
+                    <div class="category-heading-copy"><p class="category-section-kicker">COLLECTION 0${index + 1}</p><h2>${VFUtils.sanitize(category.name)}</h2><p>${VFUtils.sanitize(category.description)}</p><span class="category-section-count">${categoryProducts.length ? `${categoryProducts.length} listed ${categoryProducts.length === 1 ? 'piece' : 'pieces'}` : `${this.taxonomyProductTypes(category).length} styles to explore`}</span></div>
+                    <div class="category-heading-visual" aria-hidden="true"><span>0${index + 1}</span><i>GIFT COLLECTION</i></div>
+                </header>`;
+
+            let content;
+            if (groups.length) {
+                content = groups.map(group => {
+                    const groupProducts = categoryProducts.filter(product => this.taxonomySubcategoryForProduct(product).toLowerCase() === group.name.toLowerCase());
+                    if (this.isFilteredView() && groupProducts.length === 0) return '';
+                    const groupKey = `${VFUtils.slugify(category.name)}-${VFUtils.slugify(group.name)}`;
+                    const typeMenu = this.renderProductTypeMenu(group.productTypes || [], `${group.name} styles`);
+                    const productContent = groupProducts.length
+                        ? this.renderCategoryProductCards(groupProducts, groupKey)
+                        : this.renderCategoryEnquiry(category, group);
+                    return `<section class="catalogue-subsection"><div class="catalogue-subsection-heading"><div><p class="subsection-kicker">${VFUtils.sanitize(category.name)}</p><h3>${VFUtils.sanitize(group.name)}</h3><p>${groupProducts.length ? `${groupProducts.length} ${groupProducts.length === 1 ? 'piece' : 'pieces'} in this group` : 'Made-to-order styles available'}</p></div>${typeMenu}</div>${productContent}</section>`;
+                }).join('');
             } else {
-                container.innerHTML = '';
+                const typeMenu = this.renderProductTypeMenu(category.productTypes || [], `${category.name} styles`);
+                content = categoryProducts.length
+                    ? `<div class="catalogue-category-toolbar">${typeMenu}</div>${this.renderCategoryProductCards(categoryProducts, VFUtils.slugify(category.name))}`
+                    : this.renderCategoryEnquiry(category, null);
             }
+
+            return `<section class="catalogue-category-section" id="${VFUtils.sanitize(this.categorySectionId(category))}">${categoryHeading}<div class="catalogue-category-content">${content}</div></section>`;
+        }).join('');
+
+        container.innerHTML = sections || `<div class="empty-state">No products match your current search and filters.</div>`;
+        const count = document.getElementById('catalogue-count');
+        if (count) {
+            count.textContent = this.catalogueCountText(this._visibleProductCount, filtered.length);
+        }
+        this.observeFadeIns();
+    },
+
+    renderFlatProductGrid(filtered, container) {
+        if (filtered.length === 0) {
+            container.innerHTML = `<div class="empty-state">No products match your current search.</div>`;
         } else {
             const shown = Math.min(this._productShown, filtered.length);
             const visible = filtered.slice(0, shown);
-            let html = visible.map((p, i) =>
-                this.productCardHTML(p, p.display_order || i + 1)
-            ).join('');
             const more = filtered.length - visible.length;
-            if (more > 0) {
-                html += VFUtils.loadMoreButton(more, 'load-more-products-btn');
-            }
-            container.innerHTML = html;
+            container.innerHTML = visible.map((product, index) => this.productCardHTML(product, product.display_order || index + 1)).join('')
+                + (more > 0 ? VFUtils.loadMoreButton(more, 'load-more-products-btn') : '');
         }
-
         const count = document.getElementById('catalogue-count');
-        if (count) {
-            const displayed = Math.min(this._productShown, filtered.length);
-            count.textContent = this.catalogueCountText(displayed, filtered.length);
-        }
+        if (count) count.textContent = this.catalogueCountText(Math.min(this._productShown, filtered.length), filtered.length);
         this.observeFadeIns();
+    },
+
+    renderProductTypeMenu(types, label) {
+        if (!types || !types.length) return '';
+        return `<details class="catalogue-type-menu"><summary>View ${VFUtils.sanitize(label)}</summary><div>${types.map(type => `<span>${VFUtils.sanitize(type.name)}</span>`).join('')}</div></details>`;
+    },
+
+    renderCategoryEnquiry(category, group) {
+        const context = group ? `${category.name} — ${group.name}` : category.name;
+        const typeMenu = this.renderProductTypeMenu(group ? group.productTypes : this.taxonomyProductTypes(category), `${context} styles`);
+        return `<div class="category-enquiry-panel"><div><strong>Made for your moment</strong><p>Explore ${VFUtils.sanitize(context)} styles or ask us to create the right piece for you.</p>${typeMenu}</div><a class="product-order-btn" href="${this.categoryInquiryLink(context)}" target="_blank" rel="noopener noreferrer">${this.WA_ICON}<span>Ask us on WhatsApp</span></a></div>`;
+    },
+
+    renderCategoryProductCards(products, groupKey) {
+        let ordered = products.slice();
+        if (this._sort === 'featured') {
+            ordered.sort((a, b) => Number(this.isFeatured(b)) - Number(this.isFeatured(a))
+                || (parseInt(a.display_order, 10) || 999) - (parseInt(b.display_order, 10) || 999));
+        }
+        const shownCount = Math.min(this._shownByCategoryGroup[groupKey] || this.CATEGORY_PRODUCT_LIMIT, ordered.length);
+        this._shownByCategoryGroup[groupKey] = shownCount;
+        const visible = ordered.slice(0, shownCount);
+        this._visibleProductCount += visible.length;
+        const cards = visible.map((product, index) => this.productCardHTML(product, product.display_order || index + 1)).join('');
+        const remaining = ordered.length - shownCount;
+        const more = remaining > 0
+            ? `<button type="button" class="load-more category-load-more" data-load-category-group="${VFUtils.sanitize(groupKey)}">Show ${Math.min(this.CATEGORY_PRODUCT_CHUNK, remaining)} more (${remaining} left) <span aria-hidden="true">↓</span></button>`
+            : '';
+        return `<div class="products-grid category-products-grid">${cards}${more}</div>`;
+    },
+
+    showMoreCategoryGroup(groupKey) {
+        const current = this._shownByCategoryGroup[groupKey] || this.CATEGORY_PRODUCT_LIMIT;
+        this._shownByCategoryGroup[groupKey] = current + this.CATEGORY_PRODUCT_CHUNK;
+        this.renderProductGrid(this._lastFiltered || []);
     },
 
     showMoreProducts() {
@@ -720,6 +1072,8 @@ const VF = {
 
     clearProductFilters() {
         this._activeCategory = 'all';
+        this._activeSubcategory = 'all';
+        this._activeProductType = 'all';
         this._searchQuery = '';
         this._activeOccasion = 'all';
         this._priceRange = 'any';
@@ -732,6 +1086,8 @@ const VF = {
         if (this._products) {
             this.renderFilterPills();
             this.renderOccasionControls();
+            this.renderCategoryExplorer();
+            this.renderCategorySelection();
             this.applyProductFilters();
         }
     },
@@ -756,7 +1112,9 @@ const VF = {
             ? this.srcVariant(url, 300, 300) + ' 300w, ' + this.srcVariant(url, 600, 600) + ' 600w, ' + this.srcVariant(url, 900, 900) + ' 900w'
             : '';
         const price = VFUtils.formatNaira(p.price);
-        const category = String(p.category || '').trim() || 'Custom';
+        const taxonomyCategory = this.taxonomyCategoryForProduct(p);
+        const category = taxonomyCategory ? taxonomyCategory.name : (String(p.category || '').trim() || 'Custom');
+        const productType = this.taxonomyProductTypeForProduct(p);
         const slug = VFUtils.slugify(p.name) || VFUtils.slugify(pid);
         const soldOut = VFUtils.isSoldOut(p);
         const badgeLabel = soldOut ? (String(p.stock_label || '').trim() || 'Sold Out') : category;
@@ -784,6 +1142,7 @@ const VF = {
                     <span class="product-badge${soldOut ? ' out' : ''}">${VFUtils.sanitize(badgeLabel)}</span>
                 </div>
                 <div class="product-body">
+                    ${(this.isFeatured(p) || (productType && this.normalizeTaxonomyText(productType) !== this.normalizeTaxonomyText(p.name))) ? `<div class="product-card-flags">${productType && this.normalizeTaxonomyText(productType) !== this.normalizeTaxonomyText(p.name) ? `<span class="product-type-label">${VFUtils.sanitize(productType)}</span>` : ''}${this.isFeatured(p) ? '<span class="product-featured-label">Featured</span>' : ''}</div>` : ''}
                     <h3>${VFUtils.sanitize(p.name)}</h3>
                     ${price ? `<span class="product-price">From ${VFUtils.sanitize(price)}</span>` : ''}
                     <p>${VFUtils.sanitize(p.description)}</p>
@@ -803,6 +1162,8 @@ const VF = {
     },
 
     handleProductGridClick(e) {
+        const categoryLoadMore = e.target.closest('[data-load-category-group]');
+        if (categoryLoadMore) return this.showMoreCategoryGroup(categoryLoadMore.getAttribute('data-load-category-group'));
         if (e.target.closest('#load-more-products-btn')) return this.showMoreProducts();
         const shareBtn = e.target.closest('.js-share[data-slug]');
         if (shareBtn) {
@@ -1013,6 +1374,8 @@ const VF = {
         this._showRefBanner = false;
         this._products = null;
         this._activeCategory = 'all';
+        this._activeSubcategory = 'all';
+        this._activeProductType = 'all';
         this._searchQuery = '';
         this._activeOccasion = 'all';
         this._priceRange = 'any';
@@ -1129,14 +1492,26 @@ const VF = {
             }
         }
 
+        const categoryExplorer = document.getElementById('category-explorer-grid');
+        if (categoryExplorer) {
+            categoryExplorer.addEventListener('click', (event) => {
+                if (!event.target.closest('[data-category-jump]')) return;
+                if (this.isFilteredView()) this.clearProductFilters();
+            });
+        }
+
+        const categorySelectionClear = document.getElementById('category-selection-clear');
+        if (categorySelectionClear) {
+            categorySelectionClear.addEventListener('click', () => {
+                this.clearProductFilters();
+                const explorer = document.getElementById('category-explorer');
+                if (explorer) explorer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
         const productsGrid = document.getElementById('products-grid');
         if (productsGrid) {
             productsGrid.addEventListener('click', (e) => this.handleProductGridClick(e));
-        }
-
-        const featuredGrid = document.getElementById('featured-grid');
-        if (featuredGrid) {
-            featuredGrid.addEventListener('click', (e) => this.handleProductGridClick(e));
         }
 
         const portfolioGrid = document.getElementById('portfolio-grid');
@@ -1165,7 +1540,18 @@ const VF = {
         if (productParam) {
             if (this._products) this.clearProductFilters();
             if (this._lastFiltered) {
-                this._productShown = this._lastFiltered.length;
+                const sharedProduct = this._products.find(product => VFUtils.slugify(product.name) === VFUtils.slugify(productParam));
+                const category = sharedProduct && this.taxonomyCategoryForProduct(sharedProduct);
+                if (category) {
+                    const group = this.taxonomySubcategoryForProduct(sharedProduct);
+                    const groupKey = category.subcategories?.length
+                        ? `${VFUtils.slugify(category.name)}-${VFUtils.slugify(group)}`
+                        : VFUtils.slugify(category.name);
+                    this._shownByCategoryGroup[groupKey] = this._lastFiltered.filter(product => {
+                        if (this.taxonomyCategoryForProduct(product)?.name !== category.name) return false;
+                        return !category.subcategories?.length || this.taxonomySubcategoryForProduct(product).toLowerCase() === group.toLowerCase();
+                    }).length;
+                }
                 this.renderProductGrid(this._lastFiltered);
             }
             const target = document.getElementById('product-' + VFUtils.sanitize(VFUtils.slugify(productParam)));

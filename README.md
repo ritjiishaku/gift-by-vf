@@ -10,7 +10,8 @@ Bespoke gifts storefront — customised jewellery, acrylic frames/prints and per
 
 **Storefront (`index.html`)**
 - Product catalogue with search, category & occasion filters, price ranges, and sorting
-- "Featured Pieces" highlight strip (products flagged `featured = TRUE`), rendered as its own section above the catalogue
+- Four stacked product collections with category navigation and grouped product types
+- Featured products (flagged `featured = TRUE`) are highlighted within their catalogue category
 - Direct **WhatsApp ordering** — every product card opens a pre-filled chat with the product, price, and sales-rep referral
 - Copy-a-link share buttons for individual products (`/product/<slug>`)
 - Referral tracking: visitors arriving via `?ref=<rep_id>` are attributed to a sales rep for 30 days
@@ -70,7 +71,8 @@ The sheet exposes a set of named tabs that the site fetches and renders client-s
 ├── css/style.css       # All styles (responsive, no framework)
 ├── js/
 │   ├── shared.js       # VFUtils: sheet fetch, CSV parsing, caching, slugify, helpers
-│   ├── app.js          # Storefront logic (settings, products, sections, referral)
+│   ├── app.js          # Storefront logic (settings, products, collections, referral)
+│   ├── product-taxonomy.json # Category, subgroup, and product-type definitions
 │   └── reps.js         # Sales-rep logic
 ├── api/
 │   ├── settings.js     # Serverless: site settings (used by /product pages)

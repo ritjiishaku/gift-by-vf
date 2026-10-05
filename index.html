@@ -50,7 +50,7 @@
     <!-- Google Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap">
 
-    <link rel="stylesheet" href="css/style.css?v=14">
+    <link rel="stylesheet" href="css/style.css?v=19">
 </head>
 <body>
 
@@ -79,6 +79,7 @@
 
 <!-- HERO -->
 <header id="hero" class="hero fade-in">
+    <img id="hero-background-image" class="hero-background-image" alt="" aria-hidden="true">
     <div class="hero-inner">
         <p class="section-label" id="hero-label"></p>
         <h1 class="hero-title" id="hero-title"></h1>
@@ -103,16 +104,15 @@
     <div class="trust-item">QUALITY YOU CAN TRUST</div>
 </div>
 
-<!-- FEATURED PIECES -->
-<section id="featured">
-    <div class="section-inner">
-        <div id="featured-section" hidden>
-            <div class="featured-header">
-                <p class="section-label" id="featured-label"></p>
-                <h3 class="featured-title" id="featured-title"></h3>
-            </div>
-            <div class="featured-grid" id="featured-grid"></div>
+<!-- CATEGORY EXPLORER -->
+<section id="category-explorer" class="category-explorer" aria-labelledby="category-explorer-title" hidden>
+    <div class="section-inner category-explorer-inner">
+        <div class="category-explorer-heading">
+            <p class="section-label">Browse by collection</p>
+            <h2 class="section-title" id="category-explorer-title">Find the kind of gift you have in mind</h2>
+            <p class="section-desc">Explore four carefully curated collections, then jump to the category and styles that feel right for your occasion.</p>
         </div>
+        <div class="category-explorer-grid" id="category-explorer-grid"></div>
     </div>
 </section>
 
@@ -123,6 +123,10 @@
             <p class="section-label" id="products-label"></p>
             <h2 class="section-title" id="products-title"></h2>
             <p class="section-desc" id="products-desc"></p>
+            <div class="category-selection" id="category-selection" role="status" aria-live="polite" hidden>
+                <span id="category-selection-text"></span>
+                <button type="button" id="category-selection-clear">Browse all gifts</button>
+            </div>
         </div>
         <div class="catalogue-controls fade-in">
             <div class="catalogue-search">
@@ -244,7 +248,7 @@
 <div id="lightbox" class="lightbox" hidden></div>
 
 <script src="js/shared.js?v=9"></script>
-<script src="js/app.js?v=14"></script>
+<script src="js/app.js?v=19"></script>
 
 </body>
 </html>
