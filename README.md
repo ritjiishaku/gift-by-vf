@@ -1,27 +1,108 @@
-# Gifts by VF CMS Upgrade
+# Gifts by VF
 
-This repository contains the Next.js storefront and Admin CMS for Gifts by VF.
+Bespoke gifts storefront — customised jewellery, acrylic frames/prints and personalised pieces. The shop is a **static site driven by a Google Sheet as its content management system**: the owner edits the spreadsheet and the storefront (and sales-rep tools) update automatically.
 
-## Current state
-- The Next.js storefront supports live product search/category filters, configurable site text, portfolio lightboxes, WhatsApp orders, and referral attribution.
-- The protected rep portal supports product share links and rep-specific payout summaries.
-- The protected admin includes product entry, rep/access-code management, payout records, and storefront settings, backed by local JSON content.
+**Live site:** https://vf-gift-shop.vercel.app
 
-## Recommended stack
-- Frontend: Next.js
-- CMS/backend: Next.js App APIs + Local Store (or Strapi)
-- Database: PostgreSQL / JSON Store
-- Media hosting: Cloudinary or similar
-- Deployment: Vercel + Render/Railway
+---
 
 ## Features
-- **Storefront**: Product catalogue with search, category filters, lightbox, WhatsApp order flow, and rep attribution.
-- **Sales Rep Portal (`/reps`)**: Rep login by `repId`, access code security, WhatsApp referral links, and commission tracking.
-- **Admin Dashboard (`/admin`)**: Product management (add/delete), sales rep management, payout tracking, and site settings.
 
-## Local app and access
-- Start the app from the repository root with `npm run dev`.
-- Open the storefront at `http://localhost:3000`, the staff login at `/admin/login`, and rep portal at `/reps`.
+**Storefront (`index.html`)**
+- Product catalogue with search, category & occasion filters, price ranges, and sorting
+- "Featured Pieces" highlight strip (products flagged `featured = TRUE`), rendered as its own section above the catalogue
+- Direct **WhatsApp ordering** — every product card opens a pre-filled chat with the product, price, and sales-rep referral
+- Copy-a-link share buttons for individual products (`/product/<slug>`)
+- Referral tracking: visitors arriving via `?ref=<rep_id>` are attributed to a sales rep for 30 days
+- Testimonials section (first 6 shown, "See more" expands the rest)
+- Portfolio / recent work gallery, Why Us, How to Order steps, FAQ (all content-driven)
+
+**Sales-rep tools (`reps.html`)**
+- Rep login by `rep_id`, personalised WhatsApp + catalogue links, commission check
+- Ready-made sales pitch copy per product
+
+**Admin (`admin.html`)**
+- Quick links to set up the Google Form, App Script, and content, with copy-able URLs
+
+---
+
+## Tech stack
+
+- **Vanilla HTML / CSS / JavaScript** — no build step, no framework, no dependencies
+- **Google Sheets** — content source, read via the public `gviz`/CSV export endpoints
+- **Google Apps Script (`form-sync.gs`)** — form-submission → spreadsheet sync
+- **Vercel** — hosting with GitHub auto-deploy (`vercel.json` routes `/product/:slug` to a serverless function)
+
+## How the spreadsheet "CMS" works
+
+The sheet exposes a set of named tabs that the site fetches and renders client-side:
+
+| Tab | Purpose |
+|---|---|
+| `Site Settings` | Site title, brand, hero copy, section labels, WhatsApp number |
+| `Products` | Name, description, image URL, optional video URL, price, category, order, visibility, stock, occasion, featured, material/size/turnaround/delivery/payment notes, sales caption |
+| `Sales Reps` | `rep_id`, name, commission rate, active flag |
+| `Payouts` | Order/commission records used by the rep tools |
+| `Testimonials` | Quote, name, source, star rating |
+| `Portfolio` | Image URLs, captions, category, wide flag |
+| `Why Us` | Heading, description, icon |
+| `How to Order` | Numbered step title + description |
+| `FAQs` | Question, answer, order, visibility |
+
+**Column conventions:** `display_order` sorts content (blanks last), `is_visible` toggles visibility (`TRUE`/blank), `featured` promotes products, `in_stock`/`stock_label` handle Sold Out states.
+
+**Caching & refresh:** tab data is cached in the browser for 60 seconds (`CACHE_TTL`). Append **`?refresh=1`** to any page to bypass the cache and load the latest sheet values immediately.
+
+## Referral system
+
+- Reps share links like `https://vf-gift-shop.vercel.app/?ref=VF001`
+- The referral is stored in `localStorage` (`vf_referral`) for **30 days** and appended to the WhatsApp order message so the right rep gets credited
+- The "You were referred by …" banner shows **once** on first arrival and has a dismiss (×) button that clears the stored referral
+- Appending **`?clearref=1`** to the URL wipes any stored referral on that device
+
+## Project structure
+
+```
+.
+├── index.html          # Storefront
+├── reps.html           # Sales-rep tools
+├── admin.html          # Admin quick-links
+├── css/style.css       # All styles (responsive, no framework)
+├── js/
+│   ├── shared.js       # VFUtils: sheet fetch, CSV parsing, caching, slugify, helpers
+│   ├── app.js          # Storefront logic (settings, products, sections, referral)
+│   └── reps.js         # Sales-rep logic
+├── api/
+│   ├── settings.js     # Serverless: site settings (used by /product pages)
+│   └── product/[slug].js# Serverless: product page data for /product/<slug>
+├── form-sync.gs        # Google Apps Script: form → sheet sync + trigger setup
+├── vercel.json         # Routing, rewrites, cache headers
+└── .gitignore
+```
+
+## Local development
+
+No dependencies or build step:
+
+```bash
+# serve the folder locally
+npx serve .
+# or any static server
+python -m http.server 8080
+```
+
+Open `http://localhost:8080` and the site will read the live spreadsheet as-is. Edit `js/app.js` / `css/style.css` and reload — since assets are versioned (`?v=N`), bump the `?v=` on the changed asset in `index.html`/`reps.html`/`admin.html` when deploying.
+
 ## Deployment
-- Automated deployment on Vercel via GitHub `main` branch pushes.
 
+1. Push to the GitHub repo — Vercel auto-deploys `main` (GitHub integration)
+2. `vercel.json` sets `no-cache` on HTML and routes `/product/:slug` to the product serverless function
+3. Verify with `https://vf-gift-shop.vercel.app/?refresh=1`
+
+## Google Forms / Apps Script
+
+`form-sync.gs` runs an `onFormSubmit` trigger that copies each Google Form submission into the correct tab (matched by question title ↔ column name), auto-fills `display_order`/`is_visible`, and skips duplicate rows. Install it in the spreadsheet's Apps Script editor and add an "On form submit" trigger bound to `onFormSubmit`.
+
+---
+
+*Content is managed from the private Google Sheet belonging to Gifts by VF; the repo contains only the site code.*
