@@ -642,6 +642,16 @@ const VF = {
         this.renderProductGrid(filtered);
     },
 
+    catalogueCountText(displayed, matching) {
+        const total = Array.isArray(this._products) ? this._products.length : matching;
+        const productWord = total === 1 ? 'product' : 'products';
+        if (this.isFilteredView()) {
+            const matchingWord = matching === 1 ? 'product' : 'products';
+            return `Showing ${displayed} of ${matching} matching ${matchingWord} · ${total} ${productWord} in catalogue`;
+        }
+        return `Showing ${displayed} of ${total} ${productWord}`;
+    },
+
     renderProductGrid(filtered) {
         const container = document.getElementById('products-grid');
         if (!container) return;
@@ -670,7 +680,7 @@ const VF = {
         const count = document.getElementById('catalogue-count');
         if (count) {
             const displayed = Math.min(this._productShown, filtered.length);
-            count.textContent = `Showing ${displayed} of ${filtered.length} pieces`;
+            count.textContent = this.catalogueCountText(displayed, filtered.length);
         }
         this.observeFadeIns();
     },
@@ -704,7 +714,7 @@ const VF = {
         }
 
         const count = document.getElementById('catalogue-count');
-        if (count) count.textContent = `Showing ${this._productShown} of ${this._lastFiltered.length} pieces`;
+        if (count) count.textContent = this.catalogueCountText(this._productShown, this._lastFiltered.length);
         this.observeFadeIns();
     },
 

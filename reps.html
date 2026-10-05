@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=9">
+    <link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
 
@@ -60,6 +60,40 @@
 
         <h3>Your Product Links</h3>
         <p class="rep-hint">Copy a link and share it on WhatsApp, Instagram, or Facebook. When a buyer clicks it and places an order, you earn commission.</p>
+        <p id="rep-product-count" class="rep-product-count" role="status" aria-live="polite">Loading product catalogue...</p>
+        <div class="rep-catalogue-controls" aria-label="Filter product links">
+            <label class="rep-filter-field rep-filter-search">
+                <span>Search products</span>
+                <input type="search" id="rep-product-search" placeholder="Name, description, material...">
+            </label>
+            <label class="rep-filter-field">
+                <span>Category</span>
+                <select id="rep-product-category"><option value="all">All categories</option></select>
+            </label>
+            <label class="rep-filter-field">
+                <span>Price</span>
+                <select id="rep-product-price">
+                    <option value="any">Any price</option>
+                    <option value="under-20000">Under ₦20,000</option>
+                    <option value="20000-50000">₦20,000–₦50,000</option>
+                    <option value="above-50000">Above ₦50,000</option>
+                </select>
+            </label>
+            <label class="rep-filter-field">
+                <span>Occasion</span>
+                <select id="rep-product-occasion"><option value="all">All occasions</option></select>
+            </label>
+            <label class="rep-filter-field">
+                <span>Sort by</span>
+                <select id="rep-product-sort">
+                    <option value="featured">Catalogue order</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="name-asc">Name: A to Z</option>
+                </select>
+            </label>
+            <button type="button" id="rep-product-clear" class="rep-btn rep-btn-ghost rep-filter-clear">Clear filters</button>
+        </div>
         <div id="rep-products"></div>
 
         <h3>Your Commissions</h3>
@@ -95,7 +129,7 @@
 </main>
 
 <script src="js/shared.js?v=9"></script>
-<script src="js/reps.js?v=9"></script>
+<script src="js/reps.js?v=10"></script>
 
 </body>
 </html>

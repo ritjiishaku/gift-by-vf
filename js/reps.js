@@ -8,6 +8,7 @@ const RepTools = {
     _sessionKey: 'vf_rep_session',
     _cache: {},
     _rep: null,
+    _productFilters: { query: '', category: 'all', price: 'any', occasion: 'all', sort: 'featured' },
 
     setText(id, value) {
         const el = document.getElementById(id);
@@ -26,18 +27,6 @@ const RepTools = {
 
     shareLink(pid, ref) {
         return location.origin + '/product/' + encodeURIComponent(pid) + '?ref=' + encodeURIComponent(ref);
-    },
-
-    dedupeProducts(rows) {
-        const seen = new Set();
-        const out = [];
-        (rows || []).forEach(p => {
-            const key = VFUtils.slugify(p.name) || String(p.display_order || '').trim();
-            if (!key || seen.has(key)) return;
-            seen.add(key);
-            out.push(p);
-        });
-        return out;
     },
 
     async login(repId) {
@@ -94,17 +83,158 @@ const RepTools = {
                 document.querySelectorAll('.brand-accent').forEach(el => (el.textContent = row.value));
             }
         });
-        this._repProducts = this.dedupeProducts(VFUtils.filterAndSort(products || []));
+        this._repProducts = products === null ? null : VFUtils.filterAndSort(products || []);
+        this.populateProductFilters();
         this.renderProductList();
         this._payoutRows = payouts || [];
         this.renderPayouts();
     },
 
+    populateProductFilters() {
+        const products = Array.isArray(this._repProducts) ? this._repProducts : [];
+        const categories = new Map();
+        const occasions = new Map();
+
+        products.forEach(product => {
+            const category = String(product.category || '').trim();
+            if (category) categories.set(category.toLowerCase(), category);
+            String(product.occasion || '').split(',').forEach(value => {
+                const occasion = value.trim();
+                if (occasion) occasions.set(occasion.toLowerCase(), occasion);
+            });
+        });
+
+        const categorySelect = document.getElementById('rep-product-category');
+        if (categorySelect) {
+            categorySelect.innerHTML = '<option value="all">All categories</option>' +
+                [...categories.entries()]
+                    .sort((a, b) => a[1].localeCompare(b[1]))
+                    .map(([value, label]) => `<option value="${VFUtils.sanitize(value)}">${VFUtils.sanitize(label)}</option>`)
+                    .join('');
+        }
+
+        const occasionSelect = document.getElementById('rep-product-occasion');
+        if (occasionSelect) {
+            occasionSelect.innerHTML = '<option value="all">All occasions</option>' +
+                [...occasions.entries()]
+                    .sort((a, b) => a[1].localeCompare(b[1]))
+                    .map(([value, label]) => `<option value="${VFUtils.sanitize(value)}">${VFUtils.sanitize(label)}</option>`)
+                    .join('');
+        }
+    },
+
+    getFilteredProducts() {
+        const filters = this._productFilters;
+        const query = String(filters.query || '').trim().toLowerCase();
+        const filtered = (this._repProducts || []).filter(product => {
+            if (filters.category !== 'all' && String(product.category || '').trim().toLowerCase() !== filters.category) return false;
+
+            if (filters.occasion !== 'all') {
+                const occasions = String(product.occasion || '').toLowerCase().split(',').map(value => value.trim());
+                if (!occasions.includes(filters.occasion)) return false;
+            }
+
+            if (filters.price !== 'any') {
+                const price = VFUtils.priceNumber(product);
+                if (price == null) return false;
+                if (filters.price === 'under-20000' && !(price < 20000)) return false;
+                if (filters.price === '20000-50000' && !(price >= 20000 && price <= 50000)) return false;
+                if (filters.price === 'above-50000' && !(price > 50000)) return false;
+            }
+
+            if (query) {
+                const searchable = [product.name, product.description, product.category, product.material, product.size, product.price]
+                    .join(' ').toLowerCase();
+                if (!searchable.includes(query)) return false;
+            }
+
+            return true;
+        });
+
+        if (filters.sort === 'price-asc' || filters.sort === 'price-desc') {
+            const direction = filters.sort === 'price-asc' ? 1 : -1;
+            filtered.sort((a, b) => {
+                const priceA = VFUtils.priceNumber(a);
+                const priceB = VFUtils.priceNumber(b);
+                if (priceA == null && priceB == null) return 0;
+                if (priceA == null) return 1;
+                if (priceB == null) return -1;
+                return direction * (priceA - priceB);
+            });
+        } else if (filters.sort === 'name-asc') {
+            filtered.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        }
+
+        return filtered;
+    },
+
+    clearProductFilters() {
+        this._productFilters = { query: '', category: 'all', price: 'any', occasion: 'all', sort: 'featured' };
+        const values = {
+            'rep-product-search': '',
+            'rep-product-category': 'all',
+            'rep-product-price': 'any',
+            'rep-product-occasion': 'all',
+            'rep-product-sort': 'featured'
+        };
+        Object.entries(values).forEach(([id, value]) => {
+            const control = document.getElementById(id);
+            if (control) control.value = value;
+        });
+        this.renderProductList();
+    },
+
+    bindProductFilters() {
+        const search = document.getElementById('rep-product-search');
+        if (search) {
+            search.addEventListener('input', () => {
+                this._productFilters.query = search.value;
+                this.renderProductList();
+            });
+        }
+
+        [
+            ['rep-product-category', 'category'],
+            ['rep-product-price', 'price'],
+            ['rep-product-occasion', 'occasion'],
+            ['rep-product-sort', 'sort']
+        ].forEach(([id, filter]) => {
+            const control = document.getElementById(id);
+            if (control) {
+                control.addEventListener('change', () => {
+                    this._productFilters[filter] = control.value;
+                    this.renderProductList();
+                });
+            }
+        });
+
+        const clear = document.getElementById('rep-product-clear');
+        if (clear) clear.addEventListener('click', () => this.clearProductFilters());
+    },
+
     renderProductList() {
         const container = document.getElementById('rep-products');
-        const items = this._repProducts || [];
-        if (items.length === 0) {
+        const count = document.getElementById('rep-product-count');
+        if (!Array.isArray(this._repProducts)) {
+            if (count) count.textContent = 'Product count unavailable. Please refresh and try again.';
+            container.innerHTML = '<p class="rep-empty">Could not load products right now.</p>';
+            return;
+        }
+
+        const items = this.getFilteredProducts();
+        const total = this._repProducts.length;
+        if (count) {
+            const totalLabel = total === 1 ? 'product' : 'products';
+            const matchLabel = items.length === 1 ? 'product matches' : 'products match';
+            count.textContent = `${total} ${totalLabel} in catalogue · ${items.length} ${matchLabel} your filters`;
+        }
+
+        if (items.length === 0 && total === 0) {
             container.innerHTML = '<p class="rep-empty">No products available yet.</p>';
+            return;
+        }
+        if (items.length === 0) {
+            container.innerHTML = '<p class="rep-empty">No products match your filters.</p>';
             return;
         }
         container.innerHTML = items.map((product, index) => this.repProductCardHTML(product, index)).join('');
@@ -266,6 +396,7 @@ const RepTools = {
     },
 
     init() {
+        this.bindProductFilters();
         document.getElementById('rep-form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.login(document.getElementById('rep-input').value);

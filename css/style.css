@@ -1256,6 +1256,49 @@ body {
 .rep-section h2 { color: var(--dark); margin-bottom: 10px; }
 .rep-section h3 { color: var(--dark); margin: 40px 0 6px; }
 .rep-hint { color: var(--text-light); font-size: 0.9rem; line-height: 1.7; margin-bottom: 20px; }
+.rep-product-count {
+    margin: 18px 0 12px;
+    color: var(--dark);
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+.rep-catalogue-controls {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 22px;
+    padding: 16px;
+    border: 1px solid rgba(201, 169, 110, 0.22);
+    border-radius: 12px;
+    background: rgba(201, 169, 110, 0.05);
+}
+.rep-filter-field {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--text-light);
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+.rep-filter-search { grid-column: span 2; }
+.rep-filter-field input,
+.rep-filter-field select {
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--border-input);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--dark);
+    font: inherit;
+    font-size: 0.85rem;
+}
+.rep-filter-field input:focus,
+.rep-filter-field select:focus { outline: 2px solid var(--gold); border-color: transparent; }
+.rep-filter-clear { min-height: 42px; margin-top: 0; padding: 10px 14px; font-size: 0.72rem; }
 .rep-form { display: flex; gap: 12px; max-width: 420px; margin-top: 20px; }
 .rep-form input {
     flex: 1; padding: 12px 16px; border: 1px solid rgba(0,0,0,0.15);
@@ -1549,6 +1592,10 @@ body {
 
     .rep-form { flex-direction: column; max-width: none; }
     .rep-form input { width: 100%; }
+
+    .rep-catalogue-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 12px; gap: 10px; }
+    .rep-filter-search { grid-column: 1 / -1; }
+    .rep-filter-clear { grid-column: 1 / -1; }
 
     .rep-product {
         display: grid;
