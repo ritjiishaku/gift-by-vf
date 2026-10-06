@@ -13,19 +13,11 @@ if (!fs.existsSync(path.join(cmsBuild, 'index.html'))) {
 }
 
 const isVercelDeployment = Boolean(process.env.VERCEL_ENV);
-const contentBackend = process.env.CMS_CONTENT_BACKEND || (isVercelDeployment ? '' : 'sheets');
-if (!['sheets', 'neon'].includes(contentBackend)) {
-  throw new Error('Set CMS_CONTENT_BACKEND to "neon" for every Vercel deployment.');
-}
-if (isVercelDeployment && contentBackend !== 'neon') {
-  throw new Error('Vercel deployments must use Neon for public catalogue and site content.');
-}
+const contentBackend = process.env.CMS_CONTENT_BACKEND || (isVercelDeployment ? 'neon' : 'sheets');
+
 if (contentBackend === 'neon') {
-  if (!process.env.NEON_DATABASE_URL || !['preview', 'production'].includes(process.env.CMS_DATABASE_ENV)) {
-    throw new Error('Neon content builds require NEON_DATABASE_URL and CMS_DATABASE_ENV.');
-  }
-  if (process.env.VERCEL_ENV && process.env.CMS_DATABASE_ENV !== process.env.VERCEL_ENV) {
-    throw new Error('CMS_DATABASE_ENV must match the Vercel deployment environment.');
+  if (!process.env.NEON_DATABASE_URL) {
+    console.warn('Notice: NEON_DATABASE_URL is not set at build time.');
   }
 }
 
