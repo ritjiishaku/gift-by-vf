@@ -409,7 +409,7 @@ function AuthScreen({ loading, error, password, busy, onPasswordChange, onSubmit
             <p className="page-subtitle">Sign in to manage public products and site content. Rep and payout records are not available here.</p>
             <form className="auth-form" onSubmit={onSubmit}>
               <label htmlFor="owner-passphrase">Owner passphrase</label>
-              <input id="owner-passphrase" type="password" autoComplete="current-password" value={password ?? ''} onChange={(event) => onPasswordChange?.(event.target.value)} required minLength={32} maxLength={1024} />
+              <input id="owner-passphrase" type="password" autoComplete="current-password" value={password ?? ''} onChange={(event) => onPasswordChange?.(event.target.value)} required minLength={1} maxLength={1024} />
               {error && <p className="form-error" role="alert">{error}</p>}
               <button className="button button-primary" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
             </form>
