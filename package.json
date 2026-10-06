@@ -8,6 +8,7 @@
   "scripts": {
     "build": "npm run build --workspace gifts-by-vf-cms-preview && node scripts/build-site.cjs",
     "vercel-build": "npm run build --workspace gifts-by-vf-cms-preview && node scripts/build-site.cjs",
+    "init:neon": "node scripts/init-neon-schema.cjs",
     "import:neon": "node scripts/import-public-content-to-neon.cjs",
     "test:cms": "node --test tests/neon-content.test.cjs"
   },
