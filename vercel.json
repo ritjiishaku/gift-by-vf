@@ -4,6 +4,8 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/product/:slug", "destination": "/api/product/:slug" },
+    { "source": "/admin", "destination": "/cms/index.html" },
+    { "source": "/admin/(.*)", "destination": "/cms/index.html" },
     { "source": "/cms", "destination": "/cms/index.html" },
     { "source": "/cms/(.*)", "destination": "/cms/index.html" }
   ],

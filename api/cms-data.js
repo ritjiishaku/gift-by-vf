@@ -18,7 +18,8 @@ module.exports = async function handler(req, res) {
     }
     if (req.method === 'POST' && !requireSameOrigin(req, res)) return;
     if (!requireOwner(req, res)) return;
-    if (process.env.CMS_CONTENT_BACKEND !== 'neon') {
+    const backend = process.env.CMS_CONTENT_BACKEND || (process.env.NEON_DATABASE_URL ? 'neon' : 'sheets');
+    if (backend !== 'neon') {
         return sendJson(res, 503, { error: 'The Neon-backed CMS is not enabled for this deployment.' });
     }
 
