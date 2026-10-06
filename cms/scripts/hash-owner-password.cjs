@@ -9,7 +9,7 @@ if (!process.stdin.isTTY || typeof process.stdin.setRawMode !== 'function') {
 const input = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
 let password = '';
 
-process.stdout.write('Enter a random owner passphrase (at least 32 characters): ');
+process.stdout.write('Enter a random owner passphrase (at least 11 characters): ');
 process.stdin.setRawMode(true);
 process.stdin.setEncoding('utf8');
 process.stdin.resume();
@@ -24,8 +24,8 @@ process.stdin.on('data', (chunk) => {
       process.stdin.setRawMode(false);
       process.stdin.pause();
       input.close();
-      if (Buffer.byteLength(password, 'utf8') < 32) {
-        process.stderr.write('\nPassphrase must be at least 32 bytes. Nothing was generated.\n');
+      if (Buffer.byteLength(password, 'utf8') < 11) {
+        process.stderr.write('\nPassphrase must be at least 11 bytes. Nothing was generated.\n');
         process.exit(1);
       }
       const salt = crypto.randomBytes(16).toString('hex');

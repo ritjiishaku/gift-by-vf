@@ -66,7 +66,14 @@ function App() {
       .then(async ({ authenticated: hasSession }) => {
         if (!mounted) return;
         setAuthenticated(hasSession);
-        if (hasSession) await refreshCatalogue();
+        if (!hasSession) return;
+        try {
+          await refreshCatalogue();
+        } catch (error: unknown) {
+          if (!mounted) return;
+          setAuthError(error instanceof Error ? error.message : 'CMS sign-in is unavailable.');
+          reportError(error);
+        }
       })
       .catch((error: unknown) => {
         if (mounted) setAuthError(error instanceof Error ? error.message : 'CMS sign-in is unavailable.');
@@ -270,12 +277,19 @@ function App() {
     setAuthError('');
     try {
       await signIn(loginPassword);
-      setLoginPassword('');
-      setAuthenticated(true);
-      await refreshCatalogue();
     } catch (error) {
       setAuthenticated(false);
       setAuthError(error instanceof Error ? error.message : 'CMS sign-in failed.');
+      setAuthBusy(false);
+      setAuthReady(true);
+      return;
+    }
+    setLoginPassword('');
+    setAuthenticated(true);
+    try {
+      await refreshCatalogue();
+    } catch (error) {
+      reportError(error);
     } finally {
       setAuthBusy(false);
       setAuthReady(true);
