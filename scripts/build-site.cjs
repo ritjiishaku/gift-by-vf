@@ -24,7 +24,7 @@ if (contentBackend === 'neon') {
 fs.rmSync(output, { recursive: true, force: true });
 fs.mkdirSync(output, { recursive: true });
 
-for (const entry of ['index.html', 'reps.html', 'admin.html', 'css', 'js']) {
+for (const entry of ['index.html', 'reps.html', 'admin.html', 'legacy-admin.html', 'css', 'js']) {
   fs.cpSync(path.join(root, entry), path.join(output, entry), { recursive: true });
 }
 fs.cpSync(cmsBuild, path.join(output, 'cms'), { recursive: true });
