@@ -1,8 +1,11 @@
 {
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "public",
+  "cleanUrls": true,
   "rewrites": [
-    { "source": "/product/:slug", "destination": "/api/product/:slug" }
+    { "source": "/product/:slug", "destination": "/api/product/:slug" },
+    { "source": "/cms", "destination": "/cms/index.html" },
+    { "source": "/cms/(.*)", "destination": "/cms/index.html" }
   ],
   "headers": [
     {
