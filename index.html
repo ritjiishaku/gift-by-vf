@@ -2,7 +2,7 @@
 <html lang="en-NG">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Gifts by VF</title>
     <meta name="description" content="Gifts by VF handcrafts personalized jewelry, acrylic frames, and custom gifts for birthdays, weddings, and corporate events. Order on WhatsApp, delivered across Nigeria.">
     <meta name="theme-color" content="#c9a96e">
@@ -50,7 +50,7 @@
     <!-- Google Fonts -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap">
 
-    <link rel="stylesheet" href="css/style.css?v=19">
+    <link rel="stylesheet" href="css/style.css?v=21">
 </head>
 <body>
 
@@ -62,7 +62,7 @@
 <!-- NAV -->
 <nav id="navbar">
     <div class="nav-inner">
-        <a href="#products" class="nav-logo" aria-label="Gifts by VF">
+        <a href="#hero" class="nav-logo" aria-label="Gifts by VF">
             <span class="brand-name"><span class="brand-text">Gifts by V</span><span class="brand-accent">F</span></span>
             <span class="nav-tagline">Bespoke Gifts</span>
         </a>
@@ -81,40 +81,15 @@
 <header id="hero" class="hero fade-in">
     <img id="hero-background-image" class="hero-background-image" alt="" aria-hidden="true">
     <div class="hero-inner">
-        <p class="section-label" id="hero-label"></p>
+        <p class="section-label hero-label" id="hero-label"></p>
         <h1 class="hero-title" id="hero-title"></h1>
         <p class="hero-desc" id="hero-desc"></p>
-        <div class="hero-ctas">
-            <a href="#products" class="hero-btn" id="hero-browse" aria-label="Browse the catalogue">
-                <span>Browse gifts</span>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-            </a>
-            <a href="https://wa.me/2348127252004" id="hero-wa" class="hero-btn ghost" target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-whatsapp"/></svg>
-                <span id="hero-cta-text">Chat on WhatsApp</span>
-            </a>
+        <!-- CATEGORY EXPLORER (hero CTAs) -->
+        <div id="category-explorer" class="category-explorer" hidden>
+            <div class="category-explorer-grid" id="category-explorer-grid"></div>
         </div>
     </div>
 </header>
-
-<div class="trust-strip" aria-label="Brand trust points">
-    <div class="trust-item">PERSONALISED FOR YOU</div>
-    <div class="trust-item">MADE TO BE REMEMBERED</div>
-    <div class="trust-item">NATIONWIDE DELIVERY</div>
-    <div class="trust-item">QUALITY YOU CAN TRUST</div>
-</div>
-
-<!-- CATEGORY EXPLORER -->
-<section id="category-explorer" class="category-explorer" aria-labelledby="category-explorer-title" hidden>
-    <div class="section-inner category-explorer-inner">
-        <div class="category-explorer-heading">
-            <p class="section-label">Browse by collection</p>
-            <h2 class="section-title" id="category-explorer-title">Find the kind of gift you have in mind</h2>
-            <p class="section-desc">Explore four carefully curated collections, then jump to the category and styles that feel right for your occasion.</p>
-        </div>
-        <div class="category-explorer-grid" id="category-explorer-grid"></div>
-    </div>
-</section>
 
 <!-- CATALOGUE -->
 <section id="products">
@@ -125,7 +100,6 @@
             <p class="section-desc" id="products-desc"></p>
             <div class="category-selection" id="category-selection" role="status" aria-live="polite" hidden>
                 <span id="category-selection-text"></span>
-                <button type="button" id="category-selection-clear">Browse all gifts</button>
             </div>
         </div>
         <div class="catalogue-controls fade-in">
@@ -249,7 +223,7 @@
 
 <script src="js/content-config.js"></script>
 <script src="js/shared.js?v=9"></script>
-<script src="js/app.js?v=19"></script>
+<script src="js/app.js?v=21"></script>
 
 </body>
 </html>

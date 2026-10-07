@@ -18,10 +18,9 @@ const VF = {
         site_title: 'Gifts by VF — Handcrafted & Bespoke Gifts',
         brand_name: 'Gifts by V',
         brand_accent: 'F',
-        hero_label: 'Thoughtful Gifts',
-        hero_title: 'Thoughtful gifts for every special moment.',
-        hero_desc: 'Handcrafted jewellery, acrylic keepsakes, and personalised gifts for birthdays, weddings, and meaningful occasions — made with care and delivered across Nigeria.',
-        hero_cta: 'Chat on WhatsApp',
+        hero_label: 'Handmade • Personalised • Delivered',
+        hero_title: 'Gifts they’ll actually remember.',
+        hero_desc: 'Personalised jewellery, acrylic keepsakes and custom gifts — made for birthdays, weddings and every moment in between.',
         products_label: 'Gift Collection',
         products_title: 'Choose the perfect gift',
         products_desc: 'From personalised keepsakes to statement jewellery and meaningful gifting moments, discover pieces made to celebrate the people you love.',
@@ -69,7 +68,6 @@ const VF = {
     PRODUCT_CHUNK: 12,
     CATEGORY_PRODUCT_LIMIT: 6,
     CATEGORY_PRODUCT_CHUNK: 6,
-    FEATURED_LIMIT: 6,
     TESTIMONIAL_LIMIT: 6,
 
     PRICE_RANGES: [
@@ -235,9 +233,11 @@ const VF = {
             return;
         }
 
+        const allProducts = Array.isArray(this._products) ? this._products : [];
+        const animateEntrance = !grid.dataset.rendered;
+        grid.dataset.rendered = '1';
         grid.innerHTML = this._taxonomy.map((category, index) => {
-            const types = this.taxonomyProductTypes(category);
-            const products = (this._products || []).filter(product => {
+            const products = allProducts.filter(product => {
                 const match = this.taxonomyCategoryForProduct(product);
                 return match && match.name === category.name;
             });
@@ -253,17 +253,16 @@ const VF = {
                 : '';
             const placeholder = `<span class="category-card-placeholder category-placeholder-${index + 1}" aria-hidden="true"><span>0${index + 1}</span><i>Gifts by VF</i></span>`;
             const media = `${placeholder}${image ? `<img src="${VFUtils.sanitize(image)}"${coverFallback} alt="" loading="lazy" decoding="async" onerror="if(this.dataset.coverFallback&&!this.dataset.didFallback){this.dataset.didFallback='1';this.src=this.dataset.coverFallback;}else{this.remove();}">` : ''}`;
-            const optionCount = types.length;
+            const count = products.length;
+            const countHtml = count > 0 ? `<span class="category-card-count">${count} gift${count === 1 ? '' : 's'}</span>` : '';
             const sectionId = this.categorySectionId(category);
 
             return `
-                <a class="category-card" href="#${VFUtils.sanitize(sectionId)}" data-category-jump="${VFUtils.sanitize(sectionId)}">
+                <a class="category-card${animateEntrance ? ' animate-in' : ''}" style="--i:${index}" href="#${VFUtils.sanitize(sectionId)}" data-category-jump="${VFUtils.sanitize(sectionId)}">
                     <span class="category-card-media">${media}<span class="category-card-overlay"></span></span>
                     <span class="category-card-content">
-                        <span class="category-card-meta"><span>0${index + 1}</span><span>${optionCount} styles</span></span>
                         <strong>${VFUtils.sanitize(category.name)}</strong>
-                        <span class="category-card-description">${VFUtils.sanitize(category.description)}</span>
-                        <span class="category-card-action">Explore collection <span aria-hidden="true">→</span></span>
+                        <span class="category-card-action">${countHtml}<span class="category-card-action-label">View gifts <b aria-hidden="true">→</b></span></span>
                     </span>
                 </a>`;
         }).join('');
@@ -547,7 +546,6 @@ const VF = {
         this.setText('hero-label', settings.hero_label);
         this.setText('hero-title', settings.hero_title);
         this.setText('hero-desc', settings.hero_desc);
-        this.setText('hero-cta-text', settings.hero_cta);
         this.setText('featured-label', settings.featured_label);
         this.setText('featured-title', settings.featured_title);
         this.setText('why-label', settings.why_label);
@@ -565,9 +563,6 @@ const VF = {
 
         const howtoWa = document.getElementById('howto-wa');
         if (howtoWa) howtoWa.href = this.waLink(null, null);
-
-        const heroWa = document.getElementById('hero-wa');
-        if (heroWa) heroWa.href = this.waLink(null, null);
     },
 
     siteImageUrl(value) {
@@ -629,8 +624,6 @@ const VF = {
         const items = VFUtils.filterAndSort(rows);
         this._products = items;
         this.renderCategoryExplorer();
-        this._featuredProducts = items.filter(p => this.isFeatured(p));
-        this._featuredIds = new Set(this._featuredProducts.map(p => this.keyOf(p)));
         this.renderFilterPills();
         this.renderCategorySelection();
         this.renderOccasionControls();
@@ -745,33 +738,6 @@ const VF = {
             if (!haystack.includes(q)) return false;
         }
         return true;
-    },
-
-    renderFeaturedStrip() {
-        const section = document.getElementById('featured-section');
-        const container = document.getElementById('featured-grid');
-        if (!section || !container) return;
-        if (!this._featuredProducts || this._featuredProducts.length === 0) {
-            section.hidden = true;
-            return;
-        }
-        const pool = this.isFilteredView()
-            ? this._featuredProducts.filter(p => this.matchesFilters(p))
-            : this._featuredProducts.slice();
-        if (pool.length === 0) {
-            section.hidden = true;
-            return;
-        }
-        const shown = pool.slice(0, this.FEATURED_LIMIT);
-        const sig = shown.map(p => this.keyOf(p)).join('|');
-        if (container.dataset.sig !== sig) {
-            container.dataset.sig = sig;
-            container.innerHTML = shown.map((p, i) =>
-                this.productCardHTML(p, p.display_order || i + 1)
-            ).join('');
-            this.observeFadeIns();
-        }
-        section.hidden = false;
     },
 
     renderPriceSelect() {
@@ -1383,8 +1349,6 @@ const VF = {
         this._lastFiltered = null;
         this._productShown = this.PRODUCT_LIMIT;
         this._searchTimer = null;
-        this._featuredProducts = null;
-        this._featuredIds = null;
 
         const params = new URLSearchParams(window.location.search);
         if (params.get('clearref')) {
@@ -1497,15 +1461,6 @@ const VF = {
             categoryExplorer.addEventListener('click', (event) => {
                 if (!event.target.closest('[data-category-jump]')) return;
                 if (this.isFilteredView()) this.clearProductFilters();
-            });
-        }
-
-        const categorySelectionClear = document.getElementById('category-selection-clear');
-        if (categorySelectionClear) {
-            categorySelectionClear.addEventListener('click', () => {
-                this.clearProductFilters();
-                const explorer = document.getElementById('category-explorer');
-                if (explorer) explorer.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         }
 
