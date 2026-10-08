@@ -1765,6 +1765,7 @@ body {
 }
 .admin-pass-toggle:hover { color: var(--gold); }
 .admin-pass-toggle svg { width: 20px; height: 20px; fill: currentColor; }
+.admin-pass-toggle svg[hidden] { display: none; }
 .admin-section h2 { color: var(--dark); margin-bottom: 10px; }
 .admin-section h3 { color: var(--dark); margin: 28px 0 10px; font-size: 1.15rem; }
 .admin-intro { color: var(--text-light); font-size: 0.95rem; line-height: 1.7; margin-bottom: 24px; }
