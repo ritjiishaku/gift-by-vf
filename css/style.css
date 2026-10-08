@@ -1755,6 +1755,16 @@ body {
 .admin-gate-box h2 { color: var(--dark); margin-bottom: 8px; }
 .admin-gate-box .rep-form { max-width: none; margin-top: 16px; }
 .admin-gate-box .rep-error { margin-top: 12px; }
+.admin-pass-field { position: relative; flex: 1 1 auto; min-width: 0; }
+.admin-pass-field input { width: 100%; padding-right: 44px; }
+.admin-pass-toggle {
+    position: absolute; top: 50%; right: 4px; transform: translateY(-50%);
+    width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; border: 0; border-radius: 4px;
+    color: var(--text-light); cursor: pointer; transition: color 0.2s;
+}
+.admin-pass-toggle:hover { color: var(--gold); }
+.admin-pass-toggle svg { width: 20px; height: 20px; fill: currentColor; }
 .admin-section h2 { color: var(--dark); margin-bottom: 10px; }
 .admin-section h3 { color: var(--dark); margin: 28px 0 10px; font-size: 1.15rem; }
 .admin-intro { color: var(--text-light); font-size: 0.95rem; line-height: 1.7; margin-bottom: 24px; }
