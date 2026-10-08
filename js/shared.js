@@ -103,14 +103,13 @@ const VFUtils = {
         } catch (e) { /* storage may be unavailable */ }
     },
 
-    async fetchTab(tabName, sheetId, cache, forceSheets = false) {
+    async fetchTab(tabName, sheetId, cache) {
         sheetId = sheetId || this.SHEET_ID;
         if (sheetId === 'YOUR_SHEET_ID') return [];
         const force = this.refreshMode();
         if (!force && cache[tabName]) return cache[tabName];
 
-        const useNeon = !forceSheets && window.VF_CONTENT_BACKEND === 'neon';
-        const storageKey = `vf_cache:${useNeon ? 'neon:' : ''}${sheetId}:${tabName}`;
+        const storageKey = `vf_cache:${sheetId}:${tabName}`;
         const stored = this.cacheGet(storageKey);
         if (!force && stored && stored.data && Date.now() - stored.ts < this.CACHE_TTL) {
             cache[tabName] = stored.data;
@@ -119,26 +118,11 @@ const VFUtils = {
 
         try {
             let result;
-            if (tabName === 'Site Settings' && !forceSheets) {
+            if (tabName === 'Site Settings') {
                 const response = await fetch('/api/settings?cb=' + Date.now(), { cache: 'no-store' });
                 if (!response.ok) throw new Error(`Failed to fetch ${tabName}`);
                 const json = await response.json();
                 result = Array.isArray(json) ? json : [];
-            } else if (useNeon) {
-                const collectionByTab = {
-                    Products: 'products',
-                    Portfolio: 'portfolio',
-                    Testimonials: 'testimonials',
-                    'Why Us': 'why-us',
-                    'How to Order': 'how-to-order',
-                    FAQs: 'faqs'
-                };
-                const collection = collectionByTab[tabName];
-                if (!collection) throw new Error(`Unsupported public content collection: ${tabName}`);
-                const response = await fetch(`/api/public-content?collection=${encodeURIComponent(collection)}`, { cache: 'no-store' });
-                if (!response.ok) throw new Error(`Failed to fetch ${tabName}`);
-                const json = await response.json();
-                result = Array.isArray(json.data) ? json.data : [];
             } else {
                 const url = this.tabUrl(tabName, sheetId);
                 const response = await fetch(url, { cache: 'no-store' });

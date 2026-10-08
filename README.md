@@ -29,10 +29,9 @@ Bespoke gifts storefront — customised jewellery, acrylic frames/prints and per
 
 ## Tech stack
 
-- **Vanilla HTML / CSS / JavaScript** — no build step, no framework, no dependencies
+- **Vanilla HTML / CSS / JavaScript** — no framework or runtime dependencies
 - **Google Sheets** — content source, read via the public `gviz`/CSV export endpoints
-- **Google Apps Script (`form-sync.gs`)** — form-submission → spreadsheet sync
-- **Vercel** — hosting with GitHub auto-deploy (`vercel.json` routes `/product/:slug` to a serverless function)
+- **Vercel** — static-site build and hosting; `/product/:slug` uses a serverless function to read the Products sheet
 
 ## How the spreadsheet "CMS" works
 
@@ -67,7 +66,6 @@ The sheet exposes a set of named tabs that the site fetches and renders client-s
 .
 ├── index.html          # Storefront
 ├── reps.html           # Sales-rep tools
-├── admin.html          # Admin quick-links
 ├── css/style.css       # All styles (responsive, no framework)
 ├── js/
 │   ├── shared.js       # VFUtils: sheet fetch, CSV parsing, caching, slugify, helpers
@@ -77,17 +75,22 @@ The sheet exposes a set of named tabs that the site fetches and renders client-s
 ├── api/
 │   ├── settings.js     # Serverless: site settings (used by /product pages)
 │   └── product/[slug].js# Serverless: product page data for /product/<slug>
-├── form-sync.gs        # Google Apps Script: form → sheet sync + trigger setup
+├── scripts/build-site.cjs # Copies static site files to public/
 ├── vercel.json         # Routing, rewrites, cache headers
 └── .gitignore
 ```
 
 ## Local development
 
-No dependencies or build step:
+Build the static deployment output:
 
 ```bash
-# serve the folder locally
+npm run build
+```
+
+For local development, serve the folder directly:
+
+```bash
 npx serve .
 # or any static server
 python -m http.server 8080
@@ -100,10 +103,6 @@ Open `http://localhost:8080` and the site will read the live spreadsheet as-is. 
 1. Push to the GitHub repo — Vercel auto-deploys `main` (GitHub integration)
 2. `vercel.json` sets `no-cache` on HTML and routes `/product/:slug` to the product serverless function
 3. Verify with `https://vf-gift-shop.vercel.app/?refresh=1`
-
-## Google Forms / Apps Script
-
-`form-sync.gs` runs an `onFormSubmit` trigger that copies each Google Form submission into the correct tab (matched by question title ↔ column name), auto-fills `display_order`/`is_visible`, and skips duplicate rows. Install it in the spreadsheet's Apps Script editor and add an "On form submit" trigger bound to `onFormSubmit`.
 
 ---
 

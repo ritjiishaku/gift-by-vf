@@ -1,6 +1,5 @@
 const SHEET_ID = '1N3_A0mPYkbTZ1ZeC3b_-KdrgV84jPRfyfYwEqzIwNB4';
 const GID = 0;
-const { ContentError, getPublicCollection } = require('../lib/neon-content');
 
 function parseCSV(text) {
     const src = String(text || '').replace(/\r\n?/g, '\n');
@@ -49,10 +48,6 @@ module.exports = async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
     try {
-        if (process.env.CMS_CONTENT_BACKEND === 'neon') {
-            const settings = await getPublicCollection('settings');
-            return res.status(200).json(settings);
-        }
         const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}&cb=${Date.now()}`;
         const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) throw new Error('export failed: ' + response.status);
@@ -72,7 +67,6 @@ module.exports = async function handler(req, res) {
         res.status(200).json(out);
     } catch (err) {
         console.error('Could not load public site settings:', err.message);
-        const status = err instanceof ContentError ? err.status : 502;
-        res.status(status).json({ error: err instanceof ContentError ? err.message : 'Could not load public site settings.' });
+        res.status(502).json({ error: 'Could not load public site settings.' });
     }
 };

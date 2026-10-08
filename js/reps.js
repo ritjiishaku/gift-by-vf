@@ -16,7 +16,7 @@ const RepTools = {
     },
 
     async fetchTab(tabName) {
-        return VFUtils.fetchTab(tabName, VFUtils.SHEET_ID, this._cache, true);
+        return VFUtils.fetchTab(tabName, VFUtils.SHEET_ID, this._cache);
     },
 
     findRep(repId, reps) {
