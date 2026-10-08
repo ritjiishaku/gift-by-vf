@@ -97,9 +97,9 @@ nav.scrolled { box-shadow: 0 2px 20px rgba(0,0,0,0.08); }
     border: 1px solid var(--gold);
     padding: 8px 16px;
     border-radius: 4px;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.35px;
     text-transform: uppercase;
     text-decoration: none;
     transition: all 0.3s;
@@ -278,7 +278,7 @@ section { padding: 100px 24px; }
 .category-enquiry-panel .catalogue-type-menu { max-width:none; margin-top:11px; }
 .category-enquiry-panel .catalogue-type-menu summary { text-align:left; }
 .category-enquiry-panel .catalogue-type-menu>div { justify-content:flex-start; }
-.category-load-more { grid-column:1/-1; min-height:46px; justify-self:center; margin-top:6px; padding:10px 18px; border-radius:6px; font-size:.75rem; }
+.category-load-more { grid-column:1/-1; min-height:46px; justify-self:center; margin-top:6px; padding:12px 28px; border-radius:4px; font-size:.8rem; }
 .product-card-flags { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px; margin-bottom:7px; }
 .product-card-flags .product-type-label { margin:0; }
 .product-featured-label { color:#866737; font-size:.62rem; font-weight:700; letter-spacing:.9px; text-transform:uppercase; }
@@ -314,7 +314,7 @@ section { padding: 100px 24px; }
 .category-enquiry-panel .catalogue-type-menu summary { text-align:left; }
 .category-enquiry-panel .catalogue-type-menu>div { justify-content:flex-start; }
 .category-enquiry-panel .product-order-btn { flex:0 0 auto; }
-.category-load-more { grid-column:1/-1; min-height:46px; justify-self:center; margin-top:6px; padding:10px 18px; border-radius:6px; font-size:.75rem; }
+.category-load-more { grid-column:1/-1; min-height:46px; justify-self:center; margin-top:6px; padding:12px 28px; border-radius:4px; font-size:.8rem; }
 .product-card-flags { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px; margin-bottom:7px; }
 .product-card-flags .product-type-label { margin:0; }
 .product-featured-label { color:#866737; font-size:.62rem; font-weight:700; letter-spacing:.9px; text-transform:uppercase; }
@@ -486,7 +486,8 @@ section { padding: 100px 24px; }
 .pill.active { background: var(--gold); border-color: var(--gold); color: var(--dark); }
 .pill:focus-visible, .nav-wa-btn:focus-visible, .search-clear:focus-visible,
 button:focus-visible,
-.product-order-btn:focus-visible, .product-share-btn:focus-visible {
+.product-order-btn:focus-visible, .product-share-btn:focus-visible,
+.load-more:focus-visible, .testimonials-more-btn:focus-visible {
     outline: 2px solid var(--gold);
     outline-offset: 2px;
 }
@@ -539,9 +540,10 @@ button:focus-visible,
     appearance: none;
     background: transparent;
     border: 1px solid var(--gold);
+    border-radius: 4px;
     color: var(--gold);
     font-family: 'Inter', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -807,6 +809,7 @@ footer {
     background: var(--gold); color: var(--dark);
     padding: 12px 16px;
     border: 1px solid var(--gold);
+    border-radius: 4px;
     text-decoration: none;
     font-size: 0.8rem;
     font-weight: 600;
@@ -955,16 +958,17 @@ footer {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 13px 28px;
+    padding: 12px 28px;
     border-radius: 4px;
     font-family: 'Inter', sans-serif;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 1px;
     text-transform: uppercase;
     border: 1px solid var(--gold);
     background: transparent;
     color: var(--gold);
+    min-height: 46px;
     cursor: pointer;
     transition: all 0.3s;
 }
@@ -1096,9 +1100,9 @@ footer {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    padding: 14px 28px;
-    font-size: 0.82rem;
-    border-radius: 999px;
+    padding: 12px 28px;
+    font-size: 0.8rem;
+    border-radius: 4px;
     box-shadow: none;
 }
 #how-to-order .steps-cta .product-order-btn svg { fill: var(--dark); }
