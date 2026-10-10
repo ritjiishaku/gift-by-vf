@@ -182,8 +182,9 @@ Changing domains later is a one-variable change.
    `scripts/build-site.cjs`, `vercel.json` rewrites, and old `api/` functions.
 2. **Supabase** — create project; add SQL migrations under `supabase/migrations/`;
    add `.env.local` + `.env.example`.
-3. **Data migration** — `scripts/migrate-sheet-to-supabase.cjs` reads all 9 sheet
-   tabs via the existing CSV endpoints, coerces types, generates slugs, bulk-inserts.
+3. **Data migration** — a one-time script reads all 9 sheet tabs via the existing
+   CSV endpoints, coerces types, generates slugs, bulk-inserts. (Run locally;
+   the script itself is not committed.)
 4. **`lib/`** — unify the triplicated helpers:
    - `lib/supabase.js` (server + browser clients)
    - `lib/format.js` (`slugify`, `formatNaira`, `priceNumber`, `directImageUrl`, `filterAndSort`)
