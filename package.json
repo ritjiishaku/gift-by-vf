@@ -1,9 +1,23 @@
 {
-  "name": "gifts-by-vf-site",
+  "name": "gifts-by-vf",
+  "version": "2.0.0",
   "private": true,
-  "version": "1.0.0",
   "scripts": {
-    "build": "node scripts/build-site.cjs",
-    "vercel-build": "node scripts/build-site.cjs"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "migrate": "node scripts/migrate-sheet-to-supabase.cjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.47.0",
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.18.0",
+    "eslint-config-next": "^15.1.6",
+    "postcss": "^8.5.0"
   }
 }

@@ -1,0 +1,141 @@
+"use client";
+
+import { useEffect, useActionState } from "react";
+import { saveProductAction } from "../actions";
+
+export function AdminProductForm({ product, onClose }) {
+  const [state, formAction] = useActionState(saveProductAction, {});
+  const isNew = !product.id;
+
+  useEffect(() => {
+    if (state?.ok) onClose();
+  }, [state, onClose]);
+
+  return (
+    <div
+      className="admin-modal"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <form id="admin-product-form" action={formAction} className="admin-modal-panel">
+        <div className="admin-modal-head">
+          <h2>{isNew ? "Add product" : "Edit product"}</h2>
+          <button
+            type="button"
+            className="admin-btn admin-btn-ghost"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+
+        <input type="hidden" name="id" value={product.id || ""} />
+
+        <div className="admin-form-grid">
+          <label className="admin-field admin-field-wide">
+            Name *
+            <input name="name" defaultValue={product.name || ""} placeholder="e.g. Engraved Name Necklace" required />
+          </label>
+          <label className="admin-field">
+            Slug
+            <input name="slug" defaultValue={product.slug || ""} placeholder="Leave blank to auto-fill from the name" />
+          </label>
+          <label className="admin-field">
+            Price (display text)
+            <input name="price" defaultValue={product.price || ""} placeholder="e.g. 12,500" />
+          </label>
+          <label className="admin-field">
+            Category
+            <input name="category" defaultValue={product.category || ""} placeholder="e.g. Customized Jewelry" />
+          </label>
+          <label className="admin-field">
+            Subcategory
+            <input name="subcategory" defaultValue={product.subcategory || ""} placeholder="e.g. Engraved" />
+          </label>
+          <label className="admin-field">
+            Product type
+            <input name="product_type" defaultValue={product.product_type || ""} placeholder="e.g. Engraved Necklace" />
+          </label>
+          <label className="admin-field">
+            Occasion
+            <input name="occasion" defaultValue={product.occasion || ""} placeholder="e.g. Birthday, Wedding" />
+          </label>
+          <label className="admin-field">
+            Material
+            <input name="material" defaultValue={product.material || ""} placeholder="e.g. 925 sterling silver" />
+          </label>
+          <label className="admin-field">
+            Size
+            <input name="size" defaultValue={product.size || ""} placeholder="e.g. 45cm chain" />
+          </label>
+          <label className="admin-field">
+            Turnaround
+            <input name="turnaround" defaultValue={product.turnaround || ""} placeholder="e.g. 3–5 working days" />
+          </label>
+          <label className="admin-field">
+            Display order
+            <input name="display_order" type="number" defaultValue={product.display_order || ""} placeholder="e.g. 1 (lower shows first)" />
+          </label>
+          <label className="admin-field">
+            Stock label (when sold out)
+            <input name="stock_label" defaultValue={product.stock_label || ""} placeholder="e.g. Pre-Order Only" />
+          </label>
+          <label className="admin-field">
+            Icon key (optional)
+            <input name="icon" defaultValue={product.icon || ""} placeholder="e.g. gift, jewelry, acrylic" />
+          </label>
+          <label className="admin-field admin-field-wide">
+            Image URL
+            <input name="image_url" defaultValue={product.image_url || ""} placeholder="Paste an image link (Google Drive or website)" />
+          </label>
+          <label className="admin-field admin-field-wide">
+            Video URL (YouTube / Drive / mp4)
+            <input name="video_url" defaultValue={product.video_url || ""} placeholder="Paste a YouTube, Google Drive, or .mp4 / .webm link" />
+          </label>
+          <label className="admin-field admin-field-wide">
+            Description
+            <textarea name="description" rows={3} defaultValue={product.description || ""} placeholder="Describe the piece — materials, personalisation options, what makes it special." />
+          </label>
+          <label className="admin-field admin-field-wide">
+            Sales caption
+            <textarea name="sales_caption" rows={2} defaultValue={product.sales_caption || ""} placeholder="Ready-made pitch reps can share with customers." />
+          </label>
+          <label className="admin-field admin-field-wide">
+            Delivery note
+            <input name="delivery_note" defaultValue={product.delivery_note || ""} placeholder="e.g. Nationwide delivery in 3–5 days" />
+          </label>
+          <label className="admin-field admin-field-wide">
+            Payment note
+            <input name="payment_note" defaultValue={product.payment_note || ""} placeholder="e.g. 50% deposit to start" />
+          </label>
+        </div>
+
+        <div className="admin-checks">
+          {[
+            ["is_visible", "Visible on site"],
+            ["in_stock", "In stock"],
+            ["featured", "Featured"],
+          ].map(([key, label]) => (
+            <label key={key} className="admin-check">
+              <input
+                type="checkbox"
+                name={key}
+                value="true"
+                defaultChecked={Boolean(product[key])}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+
+        <div className="admin-form-actions">
+          <button type="submit" className="admin-btn">
+            {isNew ? "Create product" : "Save changes"}
+          </button>
+          {state?.error ? <p className="rep-error">{state.error}</p> : null}
+        </div>
+      </form>
+    </div>
+  );
+}

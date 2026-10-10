@@ -6,6 +6,7 @@ sample-data/
 !README.md
 !AGENTS.md
 !UPGRADE_PLAN.md
+!MIGRATION_PLAN.md
 node_modules
 public/
 .env*
@@ -14,3 +15,6 @@ public/
 *.tsbuildinfo
 app/buildlog.txt
 app/next-env.d.ts
+dev.err
+dev.log
+dev.error.log
